@@ -1,0 +1,141 @@
+openapi: "3.1.0"
+info:
+  version: 1.0.0
+  title: Test API
+servers:
+  - url: http://localhost/v1
+security:
+  - bearerAuth: []
+paths:
+  /user/{user-id}:
+    get:
+      summary: Get a user
+      operationId: getUserById
+      parameters:
+        - $ref: "#/components/parameters/user-id"
+      responses:
+        "200":
+          description: Ok
+          headers:
+            Last-Modified:
+              description: Describes when the user was last modified
+              schema:
+                type: string
+                format: date-time
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/user"
+        "400":
+          $ref: "#/components/responses/bad-request"
+      tags:
+        - test
+components:
+  schemas:
+    open-api-evaluation-results:
+      title: Request Evaluation Results
+      type: object
+      properties:
+        valid:
+          title: Is Valid
+          type: boolean
+          description: Specifies if the request is valid or not
+        evaluationPath:
+          title: Evaluation Path
+          type: string
+          format: json-pointer
+          description: A JSON pointer to the evaluated path in the specification as defined by RFC 6901. This pointer is not necessary evaluatable instead it's purpose is to describe the evaluation path.
+        specificationLocation:
+          title: Specification Location URI
+          type: string
+          format: uri
+          description: The URI to the specification that was evaluated
+        schemaEvaluationResults:
+          type: array
+          items:   
+            $ref: "#/components/schemas/schema-evaluation-results"
+        details:
+          type: array
+          items:   
+            $ref: "#/components/schemas/open-api-evaluation-results"
+      required:
+        - valid
+        - evaluationPath
+        - specificationLocation
+    schema-evaluation-results:
+      title: Schema Evaluation Results
+      type: object
+      properties:
+        valid:
+          title: Is Valid
+          type: boolean
+          description: Specifies if the instance is valid or not
+        evaluationPath:
+          title: Evaluation Path
+          type: string
+          format: json-pointer
+          description: A JSON pointer to the evaluated path in the specification as defined by RFC 6901. This pointer is not necessary evaluatable instead it's purpose is to describe the evaluation path.
+        schemaLocation:
+          title: Schema Location URI
+          type: string
+          format: uri
+          description: The URI to the schema that was evaluated
+        instanceLocation:
+          title: Instance Location
+          type: string
+          format: json-pointer
+          description: A pointer to the instance being evaluated
+        errors:
+          title: Evaluation Errors
+          type: object
+          additionalProperties: 
+            type: string
+          description: Each property describes an evaluation error 
+        details:
+          type: array
+          items:   
+            $ref: "#/components/schemas/schema-evaluation-results"
+      required:
+        - valid
+        - evaluationPath
+        - schemaLocation
+        - instanceLocation
+    user:
+      title: User
+      type: object
+      properties:
+        first-name:
+          type: string
+        last-name:
+          type: string
+        age:
+          type: integer        
+      required:
+        - first-name
+        - last-name        
+    user-id:
+      title: User id
+      type: string
+      format: uuid
+      description: Id of a user
+      examples:
+        - 133e4564-e89b-1ad3-a456-42661aa74000
+  parameters:
+    user-id:
+      name: user-id
+      in: path
+      required: true
+      description: The id of the user
+      schema:
+        $ref: "#/components/schemas/user-id"
+  responses:    
+    bad-request:
+      description: The request is invalid
+      headers:
+        traceparent:
+          $ref: "#/components/headers/traceparent"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/open-api-evaluation-results"
+    
