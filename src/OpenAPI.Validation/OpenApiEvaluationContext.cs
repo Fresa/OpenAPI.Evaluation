@@ -24,7 +24,7 @@ internal sealed class OpenApiEvaluationContext
         _reader = reader;
         Results = new OpenApiEvaluationResults
         {
-            EvaluationPath = reader.RootEvaluationPath,
+            EvaluationPath = reader.Trail,
             SpecificationLocation = new(document.BaseUri, reader.RootPath.ToString(JsonPointerStyle.UriEncoded))
         };
     }
@@ -114,6 +114,6 @@ internal sealed class OpenApiEvaluationContext
     private JsonSchema ResolveSchema(EvaluationOptions evaluationOptions) =>
         _resolvedSchema ??= _document.FindSubschema(_reader.RootPath, evaluationOptions) ??
                             throw new InvalidOperationException(
-                                $"Could not read schema at {_reader.RootPath}, evaluated from {_reader.RootEvaluationPath}");
+                                $"Could not read schema at {_reader.RootPath}, evaluated from {_reader.Trail}");
 
 }

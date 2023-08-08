@@ -12,22 +12,22 @@ internal sealed class JsonNodeReader
     private readonly ConcurrentDictionary<JsonPointer, JsonNodeReader?> _nodeCache = new();
     private static readonly JsonPointer RefPointer = JsonPointer.Create("$ref");
 
-    public JsonNodeReader(JsonNode root, JsonPointer rootEvaluationPath)
+    public JsonNodeReader(JsonNode root, JsonPointer trail)
     {
         _root = root;
-        RootEvaluationPath = rootEvaluationPath;
+        Trail = trail;
         RootPath = JsonPointer.Parse(root.GetPointerFromRoot());
         Key = RootPath.Segments.LastOrDefault()?.ToString(JsonPointerStyle.Plain) ?? string.Empty;
     }
 
     /// <summary>
-    /// The evaluation path leading to this node from root
-    /// <remarks>This pointer might not be possible to evaluate, it describes how the root node was traversed to get to this node</remarks>
+    /// The trail leading to this node 
+    /// <remarks>This pointer might not be possible to evaluate, it describes the way taken to get to this node</remarks>
     /// </summary>
-    internal JsonPointer RootEvaluationPath { get; }
+    internal JsonPointer Trail { get; }
     
     /// <summary>
-    /// The path leading to this node from root
+    /// The absolute path to this node from root
     /// </summary>
     internal JsonPointer RootPath { get; }
     
@@ -64,7 +64,7 @@ internal sealed class JsonNodeReader
                 throw new InvalidOperationException("Only local (fragment) $ref pointers are supported");
 
             var referencePointer = JsonPointer.Parse(referencePointerExpression);
-            new JsonNodeReader(_root.Root, RootEvaluationPath.Combine(RefPointer)).TryRead(
+            new JsonNodeReader(_root.Root, Trail.Combine(RefPointer)).TryRead(
                 referencePointer.Combine(pointer), out var reader);
             return reader;
         }
@@ -75,7 +75,7 @@ internal sealed class JsonNodeReader
             return null;
         }
 
-        return new JsonNodeReader(node, RootEvaluationPath.Combine(pointer));
+        return new JsonNodeReader(node, Trail.Combine(pointer));
     }
 
 

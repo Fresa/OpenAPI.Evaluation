@@ -1,10 +1,15 @@
 using System.Net;
 using FluentAssertions;
+using Xunit.Abstractions;
 
 namespace OpenAPI.Validation.IntegrationTests;
 
 public class ResponseValidationTests : TestSpecification
 {
+    public ResponseValidationTests(ITestOutputHelper testOutputHelper) : base(testOutputHelper)
+    {
+    }
+
     [Fact]
     public async Task Given_a_user_when_requesting_it_the_response_should_be_valid()
     {

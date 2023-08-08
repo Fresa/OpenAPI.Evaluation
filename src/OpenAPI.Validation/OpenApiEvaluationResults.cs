@@ -26,7 +26,7 @@ public class OpenApiEvaluationResults
         {
             SpecificationLocation =
                 new Uri(SpecificationLocation, result.RootPath.ToString(JsonPointerStyle.UriEncoded)),
-            EvaluationPath = result.RootEvaluationPath
+            EvaluationPath = result.Trail
         };
         _details ??= new List<OpenApiEvaluationResults>();
         _details.Add(details);
