@@ -24,11 +24,52 @@ public class ResponseValidatingHandler : DelegatingHandler
     /// <returns><see cref="EvaluationHttpResponseMessage"/>The response message and evaluation results</returns>
     /// <exception cref="InvalidOperationException">Thrown when the request doesn't match with any known api operation in the OpenAPI spec</exception>
     /// <exception cref="OpenApiEvaluationException">Thrown when the evaluation result is not valid and throwOnEvaluationFailure has been set</exception>
+    protected override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
+    {
+        var response = base.Send(request, cancellationToken);
+
+        var operationResponse = GetOpenApiOperationResponse(request, response);
+
+        // Do not dispose the stream to let the user read it again (it get's disposed by the response message eventually)
+        var contentStream = response.Content.ReadAsStream(cancellationToken);
+        var content = JsonNode.Parse(contentStream);
+        contentStream.Position = 0;
+
+        operationResponse.EvaluateContent(content);
+        operationResponse.EvaluateHeaders(response.Headers);
+
+        return CreateEvaluationResponseMessage(response, operationResponse);
+    }
+
+    /// <summary>
+    /// Sends a request and validates the response according to the OpenAPI document
+    /// </summary>
+    /// <param name="request"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns><see cref="EvaluationHttpResponseMessage"/>The response message and evaluation results</returns>
+    /// <exception cref="InvalidOperationException">Thrown when the request doesn't match with any known api operation in the OpenAPI spec</exception>
+    /// <exception cref="OpenApiEvaluationException">Thrown when the evaluation result is not valid and throwOnEvaluationFailure has been set</exception>
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
         var response = await base.SendAsync(request, cancellationToken)
             .ConfigureAwait(false);
 
+        var operationResponse = GetOpenApiOperationResponse(request, response);
+
+        // Do not dispose the stream to let the user read it again (it get's disposed by the response message eventually)
+        var contentStream = await response.Content.ReadAsStreamAsync(cancellationToken)
+            .ConfigureAwait(false);
+        var content = JsonNode.Parse(contentStream);
+        contentStream.Position = 0;
+
+        operationResponse.EvaluateContent(content);
+        operationResponse.EvaluateHeaders(response.Headers);
+
+        return CreateEvaluationResponseMessage(response, operationResponse);
+    }
+
+    private OpenApiOperationResponse GetOpenApiOperationResponse(HttpRequestMessage request, HttpResponseMessage response)
+    {
         if (!_openApiDocument.TryGetApiOperation(
                 request, out var operation))
         {
@@ -42,19 +83,18 @@ public class ResponseValidatingHandler : DelegatingHandler
                 $"There is no response with code {response.StatusCode} for operation {request.RequestUri}");
         }
 
-        // Do not dispose the stream to let the user read it again (it get's disposed by the response message eventually)
-        var contentStream = await response.Content.ReadAsStreamAsync(cancellationToken)
-            .ConfigureAwait(false);
-        var content = JsonNode.Parse(contentStream);
-        contentStream.Position = 0;
+        return operationResponse;
+    }
 
-        operationResponse.EvaluateContent(content);
-        operationResponse.EvaluateHeaders(response.Headers);
+    private EvaluationHttpResponseMessage CreateEvaluationResponseMessage(HttpResponseMessage response,
+        OpenApiOperationResponse operationResponse)
+    {
         var responseEvaluation = operationResponse.GetEvaluationResults();
-        
+
         var evaluationResponse = new EvaluationHttpResponseMessage(response, responseEvaluation);
         if (_throwOnEvaluationFailure)
             evaluationResponse.ThrowIfOpenApiEvaluationIsNotValid();
         return evaluationResponse;
+
     }
 }

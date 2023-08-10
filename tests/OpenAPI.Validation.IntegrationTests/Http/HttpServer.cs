@@ -1,4 +1,5 @@
 using System.Net;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace OpenAPI.Validation.IntegrationTests.Http;
@@ -31,8 +32,14 @@ internal sealed class HttpServer : HttpMessageHandler
             Content = new StringContent(json, Encoding.UTF8, "application/json")
         });
 
+    protected override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken) => 
+        HandleRequest(request);
+
     protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken) =>
+        Task.FromResult(HandleRequest(request));
+
+    private HttpResponseMessage HandleRequest(HttpRequestMessage request)
     {
         if (request.RequestUri == null)
             throw new ArgumentNullException($"{nameof(request)}.{nameof(request.RequestUri)}");
@@ -43,6 +50,6 @@ internal sealed class HttpServer : HttpMessageHandler
 
         var response = createResponse();
         response.RequestMessage = request;
-        return Task.FromResult(response);
+        return response;
     }
 }

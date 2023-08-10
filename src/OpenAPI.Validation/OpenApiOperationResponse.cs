@@ -18,25 +18,6 @@ public sealed class OpenApiOperationResponse
         _responseEvaluationContext = responseEvaluationContext;
         _evaluationOptions = evaluationOptions;
     }
-
-    //public async Task<(OpenApiEvaluationResults EvaluationResults, JsonNode? Content)> EvaluateAsync(HttpResponseMessage message, CancellationToken cancellationToken = default)
-    //{
-    //    var responseEvaluationContext = new OpenApiEvaluationContext(_baseDocument, _responseNodeReader);
-    //    await message.Content.LoadIntoBufferAsync()
-    //        .ConfigureAwait(false);
-    //    // Do not close/dispose the stream to let the caller use it later for deserialization.
-    //    // The stream will be cached by HttpContent and disposed by the owner of the HttpResponseMessage
-    //    var contentStream = await message.Content.ReadAsStreamAsync(cancellationToken)
-    //        .ConfigureAwait(false);
-
-        
-    //    var content = JsonNode.Parse(contentStream);
-    //    // The stream is buffered so it can rewind
-    //    contentStream.Position = 0;
-    //    EvaluateContent(responseEvaluationContext, content);
-    //    EvaluateHeaders(message.Headers, responseEvaluationContext);
-    //    return (responseEvaluationContext.Results, content);
-    //}
     
     public void EvaluateContent(JsonNode? content)
     {
