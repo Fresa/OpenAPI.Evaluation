@@ -46,6 +46,7 @@ public class ResponseValidatingHandler : DelegatingHandler
         var contentStream = await response.Content.ReadAsStreamAsync(cancellationToken)
             .ConfigureAwait(false);
         var content = JsonNode.Parse(contentStream);
+        contentStream.Position = 0;
 
         operationResponse.EvaluateContent(content);
         operationResponse.EvaluateHeaders(response.Headers);
