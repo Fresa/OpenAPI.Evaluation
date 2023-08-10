@@ -1,60 +1,73 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Net.Http.Headers;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Json.Schema;
 
 namespace OpenAPI.Validation;
 
 public sealed class OpenApiOperationResponse
 {
-    private readonly JsonNodeReader _responseNodeReader;
-    private readonly JsonNodeBaseDocument _baseDocument;
+    private readonly OpenApiEvaluationContext _responseEvaluationContext;
     private readonly EvaluationOptions _evaluationOptions;
-
+    
     internal OpenApiOperationResponse(
-        JsonNodeReader responseNodeReader,
-        JsonNodeBaseDocument baseDocument,
+        OpenApiEvaluationContext responseEvaluationContext,
         EvaluationOptions evaluationOptions)
     {
-        _responseNodeReader = responseNodeReader;
-        _baseDocument = baseDocument;
+        _responseEvaluationContext = responseEvaluationContext;
         _evaluationOptions = evaluationOptions;
     }
 
-    public async Task<OpenApiEvaluationResults> EvaluateAsync(HttpResponseMessage message, CancellationToken cancellationToken = default)
+    //public async Task<(OpenApiEvaluationResults EvaluationResults, JsonNode? Content)> EvaluateAsync(HttpResponseMessage message, CancellationToken cancellationToken = default)
+    //{
+    //    var responseEvaluationContext = new OpenApiEvaluationContext(_baseDocument, _responseNodeReader);
+    //    await message.Content.LoadIntoBufferAsync()
+    //        .ConfigureAwait(false);
+    //    // Do not close/dispose the stream to let the caller use it later for deserialization.
+    //    // The stream will be cached by HttpContent and disposed by the owner of the HttpResponseMessage
+    //    var contentStream = await message.Content.ReadAsStreamAsync(cancellationToken)
+    //        .ConfigureAwait(false);
+
+        
+    //    var content = JsonNode.Parse(contentStream);
+    //    // The stream is buffered so it can rewind
+    //    contentStream.Position = 0;
+    //    EvaluateContent(responseEvaluationContext, content);
+    //    EvaluateHeaders(message.Headers, responseEvaluationContext);
+    //    return (responseEvaluationContext.Results, content);
+    //}
+    
+    public void EvaluateContent(JsonNode? content)
     {
-        var responseEvaluationContext = new OpenApiEvaluationContext(_baseDocument, _responseNodeReader);
-        await EvaluateJsonResponseContentAsync(message.Content, responseEvaluationContext, cancellationToken)
-            .ConfigureAwait(false);
-        EvaluateResponseHeaders(message.Headers, responseEvaluationContext);
-        return responseEvaluationContext.Results;
+        if (!TryGetSchemaEvaluationContext(out var schemaEvaluationContext))
+            return;
+
+        schemaEvaluationContext.Evaluate(content, _evaluationOptions);
     }
 
-    private async Task EvaluateJsonResponseContentAsync(HttpContent content,
-        OpenApiEvaluationContext evaluationContext, CancellationToken cancellationToken)
+    private bool TryGetSchemaEvaluationContext(
+        [NotNullWhen(true)] out OpenApiEvaluationContext? schemaEvaluationContext)
     {
-        if (!evaluationContext.TryEvaluate("content", out var responseContentEvaluationContext))
-            return;
+        if (!_responseEvaluationContext.TryEvaluate("content", out var responseContentEvaluationContext))
+        {
+            schemaEvaluationContext = null;
+            return false;
+        }
 
         if (!responseContentEvaluationContext.TryEvaluate("application/json", out var jsonContentEvaluationResults))
-            return;
+        {
+            schemaEvaluationContext = null;
+            return false;
+        }
 
-        var schemaEvaluationContext = jsonContentEvaluationResults.Evaluate("schema");
-        
-        await content.LoadIntoBufferAsync()
-            .ConfigureAwait(false);
-        // Do not close/dispose the stream to let the caller use it later for deserialization.
-        // The stream will be cached by HttpContent and disposed by the owner of the HttpResponseMessage
-        var stream = await content.ReadAsStreamAsync(cancellationToken)
-            .ConfigureAwait(false);
-        using var document = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken)
-            .ConfigureAwait(false);
-        stream.Position = 0;
-        schemaEvaluationContext.Validate(document, _evaluationOptions);
+        schemaEvaluationContext = jsonContentEvaluationResults.Evaluate("schema");
+        return true;
     }
-
-    private void EvaluateResponseHeaders(HttpResponseHeaders headers, OpenApiEvaluationContext responseEvaluationContext)
+    
+    public void EvaluateHeaders(HttpResponseHeaders headers)
     {
-        var headersEvaluationContext = responseEvaluationContext.Evaluate("headers");
+        var headersEvaluationContext = _responseEvaluationContext.Evaluate("headers");
         foreach (var parameterEvaluationContext in headersEvaluationContext.EvaluateChildren())
         {
             var name = parameterEvaluationContext.GetKey();
@@ -72,7 +85,27 @@ public sealed class OpenApiOperationResponse
             }
 
             var parameterSchemaEvaluationResults = parameterEvaluationContext.Evaluate("schema");
-            parameterSchemaEvaluationResults.Validate(stringValues, _evaluationOptions);
+            parameterSchemaEvaluationResults.Evaluate(stringValues, _evaluationOptions);
         }
     }
+
+    public OpenApiEvaluationResults GetEvaluationResults() => _responseEvaluationContext.Results;
+}
+
+internal class JsonSchemaEvaluationException : JsonException
+{
+    public JsonSchemaEvaluationException(string message, List<EvaluationResults> evaluationResults) : base(message)
+    {
+        EvaluationResults = evaluationResults;
+    }
+
+    public JsonSchemaEvaluationException(string message, EvaluationResults evaluationResults) : base(message)
+    {
+        EvaluationResults = new List<EvaluationResults>
+        {
+            evaluationResults
+        };
+    }
+
+    internal List<EvaluationResults> EvaluationResults { get; }
 }

@@ -71,21 +71,21 @@ internal sealed class OpenApiEvaluationContext
         _reader.ReadChildren().Select(reader =>
             new OpenApiEvaluationContext(_document, reader, Results.AddDetailsFrom(reader)));
 
-    internal void Validate(JsonDocument instance, EvaluationOptions evaluationOptions)
+    internal void Evaluate(JsonDocument instance, EvaluationOptions evaluationOptions)
     {
         var schema = ResolveSchema(evaluationOptions);
         var result = schema.Evaluate(instance, evaluationOptions);
         Results.Report(result);
     }
 
-    internal void Validate(JsonNode? instance, EvaluationOptions evaluationOptions)
+    internal void Evaluate(JsonNode? instance, EvaluationOptions evaluationOptions)
     {
         var schema = ResolveSchema(evaluationOptions);
         var result = schema.Evaluate(instance, evaluationOptions);
         Results.Report(result);
     }
 
-    internal void Validate(IEnumerable<string?> values, EvaluationOptions evaluationOptions)
+    internal void Evaluate(IEnumerable<string?> values, EvaluationOptions evaluationOptions)
     {
         var schema = ResolveSchema(evaluationOptions);
         var array = new JsonArray(

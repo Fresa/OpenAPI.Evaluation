@@ -1,6 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Net;
-using System.Text.Json.Nodes;
 using Json.Pointer;
 using Json.Schema;
 
@@ -31,7 +30,7 @@ public sealed class OpenApiOperation
         if (responsesReader.TryRead(JsonPointer.Create(PointerSegment.Create(((int)statusCode).ToString())),
                 out var responseReader))
         {
-            response = new OpenApiOperationResponse(responseReader, _baseDocument, _evaluationOptions);
+            response = new OpenApiOperationResponse(new OpenApiEvaluationContext(_baseDocument, responseReader), _evaluationOptions);
             return true;
         }
 

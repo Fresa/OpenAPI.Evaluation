@@ -1,3 +1,4 @@
+using System.Net.Http.Json;
 using OpenAPI.Validation.Client;
 using OpenAPI.Validation.IntegrationTests.Http;
 using Xunit.Abstractions;
@@ -32,8 +33,8 @@ public abstract class TestSpecification : IAsyncLifetime
         => OpenApi.OpenApi.Load(pathRelativeToRoot, _baseUri);
 
     protected HttpClient CreateResponseValidatingClient(OpenApiDocument document) =>
-        new(new OpenApiEvaluationExceptionWriter(_testOutputHelper, 
-            new ResponseValidatingHandler(document, Server)))
+        new(new OpenApiEvaluationExceptionWriter(_testOutputHelper,
+            new ResponseValidatingHandler(document, Server, throwOnEvaluationFailure: true)))
         {
             Timeout = _timeout,
             BaseAddress = _baseUri
