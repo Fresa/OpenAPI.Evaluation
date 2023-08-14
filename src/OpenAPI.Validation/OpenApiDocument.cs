@@ -131,6 +131,7 @@ public sealed class OpenApiDocument
         }
 
         OpenApiEvaluationContext? foundMethodEvaluationContext = null;
+        foundPathEvaluationContext.Results.AnyDetails();
         foreach (var methodEvaluationContext in foundPathEvaluationContext.EvaluateChildren())
         {
             var evaluatedMethod = methodEvaluationContext.GetKey();
