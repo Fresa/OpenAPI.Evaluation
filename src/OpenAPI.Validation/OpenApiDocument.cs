@@ -56,26 +56,43 @@ public sealed class OpenApiDocument
             throw new InvalidOperationException($"OpenAPI version {versionString} is not supported. Supported versions are [{_from}, {_to})");
     }
 
-    public bool TryGetApiOperation(HttpRequestMessage message, [NotNullWhen(true)] out OpenApiOperation? operation)
+    public bool TryGetApiOperation(HttpRequestMessage message, [NotNullWhen(true)] out OpenApiOperation? operation, out OpenApiEvaluationResults evaluationResults)
     {
-        var requestUri = message.RequestUri ??
-                         throw new ArgumentNullException($"{nameof(message)}.{nameof(message.RequestUri)}");
+        var rootEvaluationContext = new OpenApiEvaluationContext(_baseDocument, _document, _evaluationOptions);
+        evaluationResults = rootEvaluationContext.Results;
+        var pathsEvaluationContext = rootEvaluationContext.Evaluate("paths");
+        operation = null;
+
+        var requestUri = message.RequestUri;
+        if (requestUri == null)
+        {
+            rootEvaluationContext.Results.Fail("Request URI is missing");
+            return false;
+        }
+
         var path = requestUri.AbsolutePath.Trim('/');
         if (!path.StartsWith(_basePath))
         {
-            throw new InvalidOperationException(
-                $"The requested path {requestUri.AbsolutePath} does not match any known endpoint");
+            rootEvaluationContext.Results.Fail($"Path '{path}' does not start with base path '{_basePath}'");
+            return false;
         }
+
         var relativePath = path[_basePath.Length..].Trim('/');
         var requestedPathSegments = relativePath.Split('/');
-        var method = JsonPointer.Create(message.Method.Method.ToLowerInvariant());
+        var method = message.Method.Method.ToLowerInvariant();
 
-        foreach (var pathJsonReader in _document.Read("paths").ReadChildren())
+        pathsEvaluationContext.Results.AnyDetails();
+        OpenApiEvaluationContext? foundPathEvaluationContext = null;
+        RoutePattern? routePattern = null;
+        foreach (var pathEvaluationContext in pathsEvaluationContext.EvaluateChildren())
         {
-            var pathTemplate = pathJsonReader.RootPath.Segments.LastOrDefault()?.Value ?? string.Empty;
+            var pathTemplate = pathEvaluationContext.GetKey();
             var apiPathSegments = pathTemplate.Split('/', StringSplitOptions.RemoveEmptyEntries);
             if (apiPathSegments.Length != requestedPathSegments.Length)
+            {
+                pathEvaluationContext.Results.Fail(DoesNotMatchPathErrorMessage());
                 continue;
+            }
 
             var match = true;
             var routeValues = new Dictionary<string, string>();
@@ -96,22 +113,49 @@ public sealed class OpenApiDocument
                 break;
             }
 
-            if (!match ||
-                !pathJsonReader.TryRead(method, out var operationReader))
+            if (!match)
+            {
+                pathEvaluationContext.Results.Fail(DoesNotMatchPathErrorMessage());
                 continue;
+            }
 
-            var routePattern = new RoutePattern(pathTemplate, routeValues);
-            operation = new OpenApiOperation(
-                operationReader,
-                _baseDocument,
-                routePattern,
-                _evaluationOptions);
-            return true;
+            foundPathEvaluationContext = pathEvaluationContext;
+            routePattern = new RoutePattern(pathTemplate, routeValues);
+
+            string DoesNotMatchPathErrorMessage() => $"'{relativePath}' does not match '{pathTemplate}'";
         }
 
-        operation = null;
+        if (foundPathEvaluationContext == null)
+        {
+            return false;
+        }
+
+        OpenApiEvaluationContext? foundMethodEvaluationContext = null;
+        foreach (var methodEvaluationContext in foundPathEvaluationContext.EvaluateChildren())
+        {
+            var evaluatedMethod = methodEvaluationContext.GetKey();
+            if (evaluatedMethod == method)
+            {
+                foundMethodEvaluationContext ??= methodEvaluationContext;
+                continue;
+            }
+            methodEvaluationContext.Results.Fail($"'{method}' does not match '{evaluatedMethod}'");
+        }
+
+        if (foundMethodEvaluationContext == null)
+            return false;
+
+        operation = new OpenApiOperation(
+            routePattern!,
+            foundMethodEvaluationContext);
+        return true;
+
+
         return false;
     }
+
+    public override string ToString() => 
+        _baseDocument.BaseUri.ToString();
 
     private readonly struct SemVer
     {

@@ -17,7 +17,7 @@ internal sealed class JsonNodeReader
         _root = root;
         Trail = trail;
         RootPath = JsonPointer.Parse(root.GetPointerFromRoot());
-        Key = RootPath.Segments.LastOrDefault()?.ToString(JsonPointerStyle.Plain) ?? string.Empty;
+        Key = RootPath.Segments.LastOrDefault()?.Value ?? string.Empty;
     }
 
     /// <summary>

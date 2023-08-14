@@ -1,3 +1,4 @@
+using Json.Schema;
 using System.Text.Json.Nodes;
 
 namespace OpenAPI.Validation.Client;
@@ -5,15 +6,15 @@ namespace OpenAPI.Validation.Client;
 public class ResponseValidatingHandler : DelegatingHandler
 {
     private readonly OpenApiDocument _openApiDocument;
-    private readonly bool _throwOnEvaluationFailure;
+    private readonly ValidatingOptions _options;
 
     public ResponseValidatingHandler(
-        OpenApiDocument openApiDocument, 
-        HttpMessageHandler inner, 
-        bool throwOnEvaluationFailure = false) : base(inner)
+        OpenApiDocument openApiDocument,
+        ValidatingOptions options,
+        HttpMessageHandler inner) : base(inner)
     {
         _openApiDocument = openApiDocument;
-        _throwOnEvaluationFailure = throwOnEvaluationFailure;
+        _options = options;
     }
 
     /// <summary>
@@ -26,19 +27,46 @@ public class ResponseValidatingHandler : DelegatingHandler
     /// <exception cref="OpenApiEvaluationException">Thrown when the evaluation result is not valid and throwOnEvaluationFailure has been set</exception>
     protected override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
     {
+        OpenApiOperation? operation = null;
+        OpenApiEvaluationResults? evaluationResults = null;
+
+        if (_options.ValidateRequest)
+        {
+            if (!_openApiDocument.TryGetApiOperation(
+                    request, out operation, out evaluationResults))
+            {
+                // todo
+                throw new OpenApiEvaluationException("Response failed evaluation", evaluationResults);
+            }
+            if (request.Content != null)
+            {
+                var requestContent = ReadContent(request.Content, cancellationToken);
+                operation.EvaluateRequestContent(requestContent);
+            }
+
+            operation.EvaluateRequestHeaders(request.Headers);
+            operation.EvaluateRequestPathParameters();
+            operation.EvaluateRequestQueryParameters(request.RequestUri);
+        }
+
         var response = base.Send(request, cancellationToken);
 
-        var operationResponse = GetOpenApiOperationResponse(request, response);
+        if (!_options.ValidateResponse)
+            return response;
 
-        // Do not dispose the stream to let the user read it again (it get's disposed by the response message eventually)
-        var contentStream = response.Content.ReadAsStream(cancellationToken);
-        var content = JsonNode.Parse(contentStream);
-        contentStream.Position = 0;
+        if (evaluationResults == null &&
+            !_openApiDocument.TryGetApiOperation(
+                request, out operation, out evaluationResults))
+        {
+            return CreateEvaluationResponseMessage(response, evaluationResults);
+        }
+        var operationResponse = GetOpenApiOperationResponse(operation, request, response);
 
-        operationResponse.EvaluateContent(content);
+        var responseContent = ReadContent(response.Content, cancellationToken);
+        operationResponse.EvaluateContent(responseContent);
         operationResponse.EvaluateHeaders(response.Headers);
 
-        return CreateEvaluationResponseMessage(response, operationResponse);
+        return CreateEvaluationResponseMessage(response, evaluationResults);
     }
 
     /// <summary>
@@ -51,32 +79,55 @@ public class ResponseValidatingHandler : DelegatingHandler
     /// <exception cref="OpenApiEvaluationException">Thrown when the evaluation result is not valid and throwOnEvaluationFailure has been set</exception>
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
+        OpenApiOperation? operation = null;
+        OpenApiEvaluationResults? evaluationResults = null;
+
+        if (_options.ValidateRequest)
+        {
+            if (!_openApiDocument.TryGetApiOperation(
+                    request, out operation, out evaluationResults))
+            {
+                throw new InvalidOperationException("todo");
+            }
+
+            if (request.Content != null)
+            {
+                var requestContent = await ReadContentAsync(request.Content, cancellationToken)
+                    .ConfigureAwait(false);
+                operation.EvaluateRequestContent(requestContent);
+            }
+
+            operation.EvaluateRequestHeaders(request.Headers);
+            operation.EvaluateRequestPathParameters();
+            operation.EvaluateRequestQueryParameters(request.RequestUri);
+        }
+
         var response = await base.SendAsync(request, cancellationToken)
             .ConfigureAwait(false);
 
-        var operationResponse = GetOpenApiOperationResponse(request, response);
+        if (!_options.ValidateResponse)
+            return response;
 
-        // Do not dispose the stream to let the user read it again (it get's disposed by the response message eventually)
-        var contentStream = await response.Content.ReadAsStreamAsync(cancellationToken)
-            .ConfigureAwait(false);
-        var content = JsonNode.Parse(contentStream);
-        contentStream.Position = 0;
-
-        operationResponse.EvaluateContent(content);
-        operationResponse.EvaluateHeaders(response.Headers);
-
-        return CreateEvaluationResponseMessage(response, operationResponse);
-    }
-
-    private OpenApiOperationResponse GetOpenApiOperationResponse(HttpRequestMessage request, HttpResponseMessage response)
-    {
-        if (!_openApiDocument.TryGetApiOperation(
-                request, out var operation))
+        if (operation == null &&
+            !_openApiDocument.TryGetApiOperation(
+                    request, out operation, out evaluationResults))
         {
-            throw new InvalidOperationException(
-                $"{request.Method} {request.RequestUri} should match an operation and path in the OpenAPI specification {_openApiDocument}");
+            return CreateEvaluationResponseMessage(response, evaluationResults);
         }
 
+
+        var operationResponse = GetOpenApiOperationResponse(operation, request, response);
+
+        var responseContent = await ReadContentAsync(response.Content, cancellationToken)
+            .ConfigureAwait(false);
+        operationResponse.EvaluateContent(responseContent);
+        operationResponse.EvaluateHeaders(response.Headers);
+
+        return CreateEvaluationResponseMessage(response, evaluationResults!);
+    }
+
+    private OpenApiOperationResponse GetOpenApiOperationResponse(OpenApiOperation operation, HttpRequestMessage request, HttpResponseMessage response)
+    {
         if (!operation.TryGetResponseSpecification(response.StatusCode, out var operationResponse))
         {
             throw new InvalidOperationException(
@@ -86,15 +137,31 @@ public class ResponseValidatingHandler : DelegatingHandler
         return operationResponse;
     }
 
-    private EvaluationHttpResponseMessage CreateEvaluationResponseMessage(HttpResponseMessage response,
-        OpenApiOperationResponse operationResponse)
+    private static JsonNode? ReadContent(HttpContent httpContent, CancellationToken cancellationToken)
     {
-        var responseEvaluation = operationResponse.GetEvaluationResults();
+        // Do not dispose the stream to let the user read it again (it get's disposed by the request/response message eventually)
+        var contentStream = httpContent.ReadAsStream(cancellationToken);
+        var content = JsonNode.Parse(contentStream);
+        contentStream.Position = 0;
+        return content;
+    }
 
-        var evaluationResponse = new EvaluationHttpResponseMessage(response, responseEvaluation);
-        if (_throwOnEvaluationFailure)
+    private static async Task<JsonNode?> ReadContentAsync(HttpContent httpContent, CancellationToken cancellationToken)
+    {
+        // Do not dispose the stream to let the user read it again (it get's disposed by the request/response message eventually)
+        var contentStream = await httpContent.ReadAsStreamAsync(cancellationToken)
+            .ConfigureAwait(false);
+        var content = JsonNode.Parse(contentStream);
+        contentStream.Position = 0;
+        return content;
+    }
+
+    private EvaluationHttpResponseMessage CreateEvaluationResponseMessage(HttpResponseMessage response,
+        OpenApiEvaluationResults evaluationResults)
+    {
+        var evaluationResponse = new EvaluationHttpResponseMessage(response, evaluationResults);
+        if (_options.ThrowOnEvaluationFailure)
             evaluationResponse.ThrowIfOpenApiEvaluationIsNotValid();
         return evaluationResponse;
-
     }
 }

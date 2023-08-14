@@ -7,16 +7,28 @@ namespace OpenAPI.Validation;
 [JsonConverter(typeof(OpenApiEvaluationResultsJsonConverter))]
 public class OpenApiEvaluationResults
 {
+    public OpenApiEvaluationResults()
+    {
+        AllDetails();
+    }
+
     public bool Exclude { get; set; }
     public bool IsValid =>
         (SchemaEvaluationResults?.All(results => results.IsValid) ?? true) &&
-        (Details?.All(results => results.IsValid) ?? true);
+        (!Errors?.Any() ?? true) &&
+        DetailsIsValid();
+
+    private Func<bool> DetailsIsValid { get; set; }
+    internal void AllDetails() => DetailsIsValid = () => (Details?.All(results => results.IsValid) ?? true);
+    internal void AnyDetails() => DetailsIsValid = () => (Details?.Any(results => results.IsValid) ?? true);
 
     public required JsonPointer EvaluationPath { get; init; }
     public required Uri SpecificationLocation { get; init; }
 
     private List<OpenApiEvaluationResults>? _details;
     public IReadOnlyList<OpenApiEvaluationResults>? Details => _details?.AsReadOnly();
+    private List<string>? _errors;
+    public IReadOnlyList<string>? Errors => _errors?.AsReadOnly();
     private List<EvaluationResults>? _schemaEvaluationResults;
     public IReadOnlyList<EvaluationResults>? SchemaEvaluationResults => _schemaEvaluationResults?.AsReadOnly();
 
@@ -31,6 +43,13 @@ public class OpenApiEvaluationResults
         _details ??= new List<OpenApiEvaluationResults>();
         _details.Add(details);
         return details;
+    }
+
+    internal void Fail(string error)
+    {
+        _errors ??= new List<string>();
+        if (!_errors.Contains(error))
+            _errors.Add(error);
     }
 
     internal void Report(EvaluationResults result)

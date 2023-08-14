@@ -30,6 +30,28 @@ paths:
           $ref: "#/components/responses/bad-request"
       tags:
         - test
+    post:
+      summary: Create a user
+      operationId: postUser
+      parameters:
+        - $ref: "#/components/parameters/user-id"
+      responses:
+        "200":
+          description: Ok
+          headers:
+            Last-Modified:
+              description: Describes when the user was last modified
+              schema:
+                type: string
+                format: date-time
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/user"
+        "400":
+          $ref: "#/components/responses/bad-request"
+      tags:
+        - test
 components:
   schemas:
     open-api-evaluation-results:

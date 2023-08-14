@@ -36,6 +36,11 @@ internal class OpenApiEvaluationResultsJsonConverter : JsonConverter<OpenApiEval
             writer.WritePropertyName("details");
             JsonSerializer.Serialize(writer, value.Details, options);
         }
+        if (value.Errors != null)
+        {
+            writer.WritePropertyName("errors");
+            JsonSerializer.Serialize(writer, value.Errors, options);
+        }
         writer.WriteEndObject();
     }
 }

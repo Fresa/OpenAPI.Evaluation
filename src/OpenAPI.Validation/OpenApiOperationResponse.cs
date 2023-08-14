@@ -1,22 +1,17 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Net.Http.Headers;
-using System.Text.Json;
 using System.Text.Json.Nodes;
-using Json.Schema;
 
 namespace OpenAPI.Validation;
 
 public sealed class OpenApiOperationResponse
 {
     private readonly OpenApiEvaluationContext _responseEvaluationContext;
-    private readonly EvaluationOptions _evaluationOptions;
     
     internal OpenApiOperationResponse(
-        OpenApiEvaluationContext responseEvaluationContext,
-        EvaluationOptions evaluationOptions)
+        OpenApiEvaluationContext responseEvaluationContext)
     {
         _responseEvaluationContext = responseEvaluationContext;
-        _evaluationOptions = evaluationOptions;
     }
     
     public void EvaluateContent(JsonNode? content)
@@ -24,7 +19,7 @@ public sealed class OpenApiOperationResponse
         if (!TryGetSchemaEvaluationContext(out var schemaEvaluationContext))
             return;
 
-        schemaEvaluationContext.Evaluate(content, _evaluationOptions);
+        schemaEvaluationContext.EvaluateAgainstSchema(content);
     }
 
     private bool TryGetSchemaEvaluationContext(
@@ -57,36 +52,13 @@ public sealed class OpenApiOperationResponse
                 if (parameterEvaluationContext.TryGetValue<bool>("required", out var required) &&
                     required)
                 {
-                    parameterEvaluationContext.Results.Report(
-                        new JsonSchemaBuilder()
-                            .Required(name)
-                            .Evaluate(null, _evaluationOptions));
+                    parameterEvaluationContext.EvaluateAsRequired(name);
                 }
                 continue;
             }
 
             var parameterSchemaEvaluationResults = parameterEvaluationContext.Evaluate("schema");
-            parameterSchemaEvaluationResults.Evaluate(stringValues, _evaluationOptions);
+            parameterSchemaEvaluationResults.EvaluateAgainstSchema(stringValues);
         }
     }
-
-    public OpenApiEvaluationResults GetEvaluationResults() => _responseEvaluationContext.Results;
-}
-
-internal class JsonSchemaEvaluationException : JsonException
-{
-    public JsonSchemaEvaluationException(string message, List<EvaluationResults> evaluationResults) : base(message)
-    {
-        EvaluationResults = evaluationResults;
-    }
-
-    public JsonSchemaEvaluationException(string message, EvaluationResults evaluationResults) : base(message)
-    {
-        EvaluationResults = new List<EvaluationResults>
-        {
-            evaluationResults
-        };
-    }
-
-    internal List<EvaluationResults> EvaluationResults { get; }
 }
