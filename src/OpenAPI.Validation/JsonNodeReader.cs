@@ -12,7 +12,7 @@ internal sealed class JsonNodeReader
     private readonly ConcurrentDictionary<JsonPointer, JsonNodeReader?> _nodeCache = new();
     private static readonly JsonPointer RefPointer = JsonPointer.Create("$ref");
 
-    public JsonNodeReader(JsonNode root, JsonPointer trail)
+    internal JsonNodeReader(JsonNode root, JsonPointer trail)
     {
         _root = root;
         Trail = trail;
@@ -49,6 +49,8 @@ internal sealed class JsonNodeReader
         return reader;
     }
 
+    internal bool TryRead(PointerSegment segment, [NotNullWhen(true)] out JsonNodeReader? reader)
+        => TryRead(JsonPointer.Create(segment), out reader);
     internal bool TryRead(JsonPointer pointer, [NotNullWhen(true)] out JsonNodeReader? reader)
     {
         reader = _nodeCache.GetOrAdd(pointer, TryRead(pointer));

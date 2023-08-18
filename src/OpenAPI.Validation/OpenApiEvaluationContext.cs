@@ -33,7 +33,12 @@ internal sealed class OpenApiEvaluationContext
     }
 
     internal OpenApiEvaluationResults Results { get; }
-    
+
+    internal OpenApiEvaluationContext Evaluate(JsonNodeReader reader)
+    {
+        return new OpenApiEvaluationContext(_document, reader, Results.AddDetailsFrom(reader), _evaluationOptions);
+    }
+
     internal OpenApiEvaluationContext Evaluate(params PointerSegment[] pointerSegments)
     {
         var reader = _reader.Read(pointerSegments);
@@ -55,8 +60,8 @@ internal sealed class OpenApiEvaluationContext
 
     internal string GetKey() => _reader.Key;
 
-    internal T GetValue<T>(params PointerSegment[] pointerSegments) => 
-        _reader.Read(pointerSegments).GetValue<T>();
+    internal T GetValue<T>(params PointerSegment[] pointerSegments) =>
+        pointerSegments.Any() ? _reader.Read(pointerSegments).GetValue<T>() : _reader.GetValue<T>();
 
     internal bool TryGetValue<T>(PointerSegment pointerSegment, out T? value)
     {
