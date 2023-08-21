@@ -2,11 +2,11 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace OpenAPI.Validation.Specification;
 
-public sealed partial class PathItem
+public sealed partial class Path
 {
     internal JsonNodeReader Reader { get; }
 
-    private PathItem(JsonNodeReader reader)
+    private Path(JsonNodeReader reader)
     {
         Reader = reader;
 
@@ -30,9 +30,9 @@ public sealed partial class PathItem
         }
     }
     
-    internal static PathItem Parse(JsonNodeReader reader)
+    internal static Path Parse(JsonNodeReader reader)
     {
-        return new PathItem(reader);
+        return new Path(reader);
     }
     
     public Operation? Get { get; private init; }
@@ -55,10 +55,10 @@ public sealed partial class PathItem
     internal class Evaluator
     {
         private readonly OpenApiEvaluationContext _openApiEvaluationContext;
-        private readonly PathItem _pathItem;
+        private readonly Path _pathItem;
         private readonly RoutePattern _routePattern;
 
-        internal Evaluator(OpenApiEvaluationContext openApiEvaluationContext, PathItem pathItem, RoutePattern routePattern)
+        internal Evaluator(OpenApiEvaluationContext openApiEvaluationContext, Path pathItem, RoutePattern routePattern)
         {
             _openApiEvaluationContext = openApiEvaluationContext;
             _openApiEvaluationContext.Results.OneDetail();

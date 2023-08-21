@@ -11,7 +11,7 @@ public sealed partial class Paths
         _reader = reader;
 
         _pathItems = _reader.ReadChildren()
-            .ToDictionary(nodeReader => nodeReader.Key, PathItem.Parse);
+            .ToDictionary(nodeReader => nodeReader.Key, Path.Parse);
     }
 
     internal static Paths Parse(JsonNodeReader reader)
@@ -19,8 +19,8 @@ public sealed partial class Paths
         return new Paths(reader);
     }
 
-    private readonly Dictionary<string, PathItem> _pathItems;
-    public IReadOnlyDictionary<string, PathItem> PathItems => _pathItems.AsReadOnly();
+    private readonly Dictionary<string, Path> _pathItems;
+    public IReadOnlyDictionary<string, Path> PathItems => _pathItems.AsReadOnly();
 
     internal Evaluator GetEvaluator(OpenApiEvaluationContext openApiEvaluationContext) => 
         new(openApiEvaluationContext.Evaluate(_reader), this);
@@ -33,13 +33,11 @@ public sealed partial class Paths
         internal Evaluator(OpenApiEvaluationContext openApiEvaluationContext, Paths paths)
         {
             _openApiEvaluationContext = openApiEvaluationContext;
-            _openApiEvaluationContext.Results.OneDetail();
-
             _paths = paths;
         }
 
         internal bool TryMatch(Uri uri, 
-            [NotNullWhen(true)] out PathItem.Evaluator? pathItemEvaluator)
+            [NotNullWhen(true)] out Path.Evaluator? pathItemEvaluator)
         {
             pathItemEvaluator = null;
             if (uri.IsAbsoluteUri)
@@ -49,14 +47,11 @@ public sealed partial class Paths
             }
 
             var requestedPathSegments = uri.OriginalString.Split('/', StringSplitOptions.RemoveEmptyEntries);
-            foreach (var pathEvaluationContext in _openApiEvaluationContext.EvaluateChildren())
+            foreach (var (pathTemplate, pathItem) in _paths.PathItems)
             {
-                var pathTemplate = pathEvaluationContext.GetKey();
-
                 var apiPathSegments = pathTemplate.Split('/', StringSplitOptions.RemoveEmptyEntries);
                 if (apiPathSegments.Length != requestedPathSegments.Length)
                 {
-                    DoesNotMatchPath();
                     continue;
                 }
 
@@ -81,17 +76,15 @@ public sealed partial class Paths
 
                 if (!match)
                 {
-                    DoesNotMatchPath();
                     continue;
                 }
 
                 var routePattern = new RoutePattern(pathTemplate, routeValues);
-                var pathItem = _paths.PathItems[pathTemplate];
-                pathItemEvaluator = pathItem.GetEvaluator(pathEvaluationContext, routePattern);
-
-                void DoesNotMatchPath() => pathEvaluationContext.Results.Fail($"'{string.Join('/', requestedPathSegments)}' does not match '{string.Join('/', apiPathSegments)}'");
+                pathItemEvaluator = pathItem.GetEvaluator(_openApiEvaluationContext, routePattern);
+                return true;
             }
-
+            
+            _openApiEvaluationContext.Results.Fail($"'{string.Join('/', requestedPathSegments)}' does not match any of the paths: {string.Join(", ", _paths.PathItems.Keys)}");
             return pathItemEvaluator != null;
         }
     }
