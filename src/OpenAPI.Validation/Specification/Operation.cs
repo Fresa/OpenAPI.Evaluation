@@ -1,5 +1,3 @@
-using Json.Pointer;
-using Json.Schema;
 using System.Diagnostics.CodeAnalysis;
 using System.Net.Http.Headers;
 using System.Text.Json.Nodes;
@@ -45,12 +43,7 @@ public sealed partial class Operation
             _operation = operation;
             _routePattern = routePattern;
         }
-
-        internal void EvaluatePathParameters()
-        {
-            // todo: route pattern validation against path parameters
-        }
-
+        
         internal bool TryMatch(string mediaType,
             [NotNullWhen(true)] out MediaType? mediaTypeObject)
         {
@@ -65,108 +58,92 @@ public sealed partial class Operation
             return requestBodyEvaluator.TryMatch(mediaType, out mediaTypeObject);
         }
 
-        public void EvaluateRequestContent(JsonNode requestContent)
+        public void EvaluateRequestContent(JsonNode? content)
         {
-            throw new NotImplementedException();
+            if (!_openApiEvaluationContext.TryEvaluate("requestBody", out var requestEvaluationContext))
+            {
+                return;
+            }
+
+            var requestBodySchemaEvaluationResults = requestEvaluationContext.Evaluate("content", "application/json", "schema");
+            requestBodySchemaEvaluationResults.EvaluateAgainstSchema(content);
         }
 
-        public void EvaluateRequestHeaders(HttpRequestHeaders requestHeaders)
+        public void EvaluateRequestHeaders(HttpRequestHeaders headers)
         {
-            throw new NotImplementedException();
+            var parametersEvaluationContext = _openApiEvaluationContext.Evaluate("parameters");
+            foreach (var parameterEvaluationContext in parametersEvaluationContext.EvaluateChildren())
+            {
+                if (parameterEvaluationContext.GetValue<string>("in") != "header")
+                    continue;
+
+                var name = parameterEvaluationContext.GetValue<string>("name");
+                if (!headers.TryGetValues(name, out var stringValues))
+                {
+                    if (parameterEvaluationContext.TryGetValue<bool>("required", out var required) &&
+                        required)
+                    {
+                        parameterEvaluationContext.EvaluateAsRequired(name);
+                    }
+                    continue;
+                }
+
+                var parameterSchemaEvaluationResults = parameterEvaluationContext.Evaluate("schema");
+                parameterSchemaEvaluationResults.EvaluateAgainstSchema(stringValues.ToArray());
+            }
         }
 
         public void EvaluateRequestPathParameters()
         {
-            throw new NotImplementedException();
+            var parametersEvaluationContext = _openApiEvaluationContext.Evaluate("parameters");
+            foreach (var parameterEvaluationContext in parametersEvaluationContext.EvaluateChildren())
+            {
+                if (parameterEvaluationContext.GetValue<string>("in") != "path")
+                    continue;
+
+                var name = parameterEvaluationContext.GetValue<string>("name");
+                if (!_routePattern.Values.TryGetValue(name, out var routeValue))
+                {
+                    throw new InvalidOperationException(
+                        $"The endpoint {_routePattern.Template} is invalid as it does not contain the defined path parameter {name} specified at {parameterEvaluationContext.Results.SpecificationLocation}");
+                }
+
+                var parameterSchemaEvaluationResults = parameterEvaluationContext.Evaluate("schema");
+                var value = JsonValue.Create(routeValue);
+                parameterSchemaEvaluationResults.EvaluateAgainstSchema(value);
+            }
         }
 
-        public void EvaluateRequestQueryParameters(Uri requestRequestUri)
+        public void EvaluateRequestQueryParameters(Uri uri)
         {
-            throw new NotImplementedException();
-        }
-    }
-}
+            var querystring = uri.Query;
+            if (string.IsNullOrEmpty(querystring))
+            {
+                return;
+            }
+            var queryParameters = System.Web.HttpUtility.ParseQueryString(querystring);
 
-public sealed partial class RequestBody
-{
-    private readonly JsonNodeReader _reader;
+            var parametersEvaluationContext = _openApiEvaluationContext.Evaluate("parameters");
+            foreach (var parameterEvaluationContext in parametersEvaluationContext.EvaluateChildren())
+            {
+                if (parameterEvaluationContext.GetValue<string>("in") != "query")
+                    continue;
 
-    internal RequestBody(JsonNodeReader reader)
-    {
-        _reader = reader;
+                var name = parameterEvaluationContext.GetValue<string>("name");
+                var stringValues = queryParameters.GetValues(name);
+                if (stringValues == null)
+                {
+                    if (parameterEvaluationContext.TryGetValue<bool>("required", out var required) &&
+                        required)
+                    {
+                        parameterEvaluationContext.EvaluateAsRequired(name);
+                    }
+                    continue;
+                }
 
-        var contentReader = _reader.Read("content");
-        foreach (var mediaTypeReader in contentReader.ReadChildren())
-        {
-            _content.Add(mediaTypeReader.Key, MediaType.Parse(mediaTypeReader));
-        }
-
-    }
-    internal static RequestBody Parse(JsonNodeReader reader)
-    {
-        return new RequestBody(reader);
-    }
-
-    private readonly Dictionary<string, MediaType> _content = new();
-    public IReadOnlyDictionary<string, MediaType> Content => _content.AsReadOnly();
-    internal Evaluator GetEvaluator(OpenApiEvaluationContext openApiEvaluationContext) =>
-        new(openApiEvaluationContext.Evaluate(_reader), this);
-
-    public class Evaluator
-    {
-        private readonly OpenApiEvaluationContext _openApiEvaluationContext;
-        private readonly RequestBody _requestBody;
-
-        internal Evaluator(OpenApiEvaluationContext openApiEvaluationContext, RequestBody requestBody)
-        {
-            _openApiEvaluationContext = openApiEvaluationContext;
-            _requestBody = requestBody;
-        }
-
-        internal bool TryMatch(string mediaType,
-            [NotNullWhen(true)] out MediaType? pathItem)
-        {
-            pathItem = null;
-            return false;
-        }
-    }
-}
-
-public sealed partial class MediaType
-{
-    private readonly JsonNodeReader _reader;
-
-    internal MediaType(JsonNodeReader reader)
-    {
-        _reader = reader;
-
-        if (_reader.TryRead("schema", out var schemaReader))
-        {
-            Schema = schemaReader.RootPath;
-        }
-    }
-
-    internal static MediaType Parse(JsonNodeReader reader)
-    {
-        return new MediaType(reader);
-    }
-
-    public JsonPointer? Schema { get; }
-
-    public class Evaluator
-    {
-        private readonly OpenApiEvaluationContext _openApiEvaluationContext;
-        private readonly MediaType _mediaType;
-
-        internal Evaluator(OpenApiEvaluationContext openApiEvaluationContext, MediaType mediaType)
-        {
-            _openApiEvaluationContext = openApiEvaluationContext;
-            _mediaType = mediaType;
-        }
-
-        public void EvaluateBody(JsonNode? body)
-        {
-            // todo
+                var parameterSchemaEvaluationResults = parameterEvaluationContext.Evaluate("schema");
+                parameterSchemaEvaluationResults.EvaluateAgainstSchema(stringValues);
+            }
         }
     }
 }

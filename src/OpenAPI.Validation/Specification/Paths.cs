@@ -25,7 +25,7 @@ public sealed partial class Paths
     internal Evaluator GetEvaluator(OpenApiEvaluationContext openApiEvaluationContext) => 
         new(openApiEvaluationContext.Evaluate(_reader), this);
 
-    internal class Evaluator
+    internal sealed class Evaluator
     {
         private readonly OpenApiEvaluationContext _openApiEvaluationContext;
         private readonly Paths _paths;

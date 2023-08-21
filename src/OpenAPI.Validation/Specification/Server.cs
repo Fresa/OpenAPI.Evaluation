@@ -1,3 +1,5 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace OpenAPI.Validation.Specification;
 
 public partial class Server
@@ -23,7 +25,7 @@ public partial class Server
         return new Evaluator(openApiEvaluationContext.Evaluate(_reader), this);
     }
 
-    internal class Evaluator
+    internal sealed class Evaluator
     {
         private readonly OpenApiEvaluationContext _openApiEvaluationContext;
         private readonly Server _server;
@@ -34,7 +36,7 @@ public partial class Server
             _server = server;
         }
 
-        internal bool TryMatch(Uri uri, out Uri? relativeUri)
+        internal bool TryMatch(Uri uri, [NotNullWhen(true)] out Uri? relativeUri)
         {
             relativeUri = null;
             

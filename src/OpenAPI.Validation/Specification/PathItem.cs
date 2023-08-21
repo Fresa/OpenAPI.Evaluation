@@ -66,12 +66,7 @@ public sealed partial class PathItem
             _pathItem = pathItem;
             _routePattern = routePattern;
         }
-
-        internal void EvaluatePath()
-        {
-
-        }
-
+        
         internal bool TryMatch(string method, [NotNullWhen(true)] out Operation.Evaluator operationEvaluator)
         {
             operationEvaluator = null;

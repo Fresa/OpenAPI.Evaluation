@@ -4,7 +4,7 @@ using System.Text.Json.Nodes;
 
 namespace OpenAPI.Validation.Specification;
 
-public partial class Servers
+public sealed partial class Servers
 {
     private readonly JsonNodeReader _reader;
 
@@ -17,15 +17,15 @@ public partial class Servers
             _servers.Add(Server.Parse(serverReader));
         }
 
-        if (!_servers.Any())
-        {
-            var defaultServer = JsonNode.Parse("""
+        if (_servers.Any()) 
+            return;
+
+        var defaultServer = JsonNode.Parse("""
             {
                 "url": "/"
             }
             """) ?? throw new InvalidOperationException("Internal parsing error");
-            _servers.Add(Server.Parse(new JsonNodeReader(defaultServer, reader.Trail)));
-        }
+        _servers.Add(Server.Parse(new JsonNodeReader(defaultServer, reader.Trail)));
     }
 
     internal static Servers Parse(JsonNodeReader reader) => new(reader);
@@ -54,11 +54,12 @@ public partial class Servers
         internal bool TryMatch(Uri uri, [NotNullWhen(true)] out Uri? relativeUri)
         {
             relativeUri = null;
+            var match = false;
             foreach (var serverObject in _servers.ServerObjects)
             {
-                serverObject.GetEvaluator(_openApiEvaluationContext).TryMatch(uri, out relativeUri);
+                match |= serverObject.GetEvaluator(_openApiEvaluationContext).TryMatch(uri, out relativeUri);
             }
-            return _openApiEvaluationContext.Results.IsValid;
+            return match;
         }
     }
 }
