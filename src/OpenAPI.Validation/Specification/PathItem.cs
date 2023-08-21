@@ -1,12 +1,14 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace OpenAPI.Validation.Specification;
 
 public sealed partial class PathItem
 {
-    private readonly JsonNodeReader _reader;
+    internal JsonNodeReader Reader { get; }
 
     private PathItem(JsonNodeReader reader)
     {
-        _reader = reader;
+        Reader = reader;
 
         Get = ReadOperation("get");
         Put = ReadOperation("put");
@@ -23,7 +25,7 @@ public sealed partial class PathItem
                 return null;
 
             var operation = Operation.Parse(operationReader);
-            _operations.Add(operation);
+            _operations.Add(name, operation);
             return operation;
         }
     }
@@ -42,49 +44,50 @@ public sealed partial class PathItem
     public Operation? Patch { get; private init; }
     public Operation? Trace { get; private init; }
 
-    private List<Operation> _operations = new();
-    public IReadOnlyList<Operation> Operations => _operations.AsReadOnly();
+    private readonly Dictionary<string, Operation> _operations = new();
+    public IReadOnlyDictionary<string, Operation> Operations => _operations.AsReadOnly();
 
-    internal Evaluator GetEvaluator(OpenApiEvaluationContext openApiEvaluationContext)
+    internal Evaluator GetEvaluator(OpenApiEvaluationContext openApiEvaluationContext, RoutePattern routePattern)
     {
-        return new Evaluator(openApiEvaluationContext.Evaluate(_reader), this);
+        return new Evaluator(openApiEvaluationContext.Evaluate(Reader), this, routePattern);
     }
 
     internal class Evaluator
     {
         private readonly OpenApiEvaluationContext _openApiEvaluationContext;
         private readonly PathItem _pathItem;
+        private readonly RoutePattern _routePattern;
 
-        internal Evaluator(OpenApiEvaluationContext openApiEvaluationContext, PathItem pathItem)
+        internal Evaluator(OpenApiEvaluationContext openApiEvaluationContext, PathItem pathItem, RoutePattern routePattern)
         {
             _openApiEvaluationContext = openApiEvaluationContext;
-            _pathItem = pathItem;
-        }
-
-        internal OpenApiEvaluationResults Match(string method)
-        {
             _openApiEvaluationContext.Results.OneDetail();
-            foreach (var pathItem in _pathItem.Operations)
-            {
-                pathItem.GetEvaluator(_openApiEvaluationContext).Evaluate(uri);
-            }
 
-            return _openApiEvaluationContext.Results;
+            _pathItem = pathItem;
+            _routePattern = routePattern;
         }
-    }
 
-    internal IEnumerable<OpenApiOperation> Evaluate(string method)
-    {
-        foreach (var methodEvaluationContext in _evaluationContext.EvaluateChildren())
+        internal void EvaluatePath()
         {
-            var evaluatedMethod = methodEvaluationContext.GetKey();
-            if (evaluatedMethod.Equals(method, StringComparison.CurrentCultureIgnoreCase))
+
+        }
+
+        internal bool TryMatch(string method, [NotNullWhen(true)] out Operation.Evaluator operationEvaluator)
+        {
+            operationEvaluator = null;
+            foreach (var (operationMethod, operationObject) in _pathItem.Operations)
             {
-                yield return new OpenApiOperation(_routePattern, methodEvaluationContext);
-                continue;
+                var operationEvaluationContext = _openApiEvaluationContext.Evaluate(operationMethod);
+                if (operationMethod.Equals(method, StringComparison.CurrentCultureIgnoreCase))
+                {
+                    operationEvaluator = operationObject.GetEvaluator(operationEvaluationContext, _routePattern);
+                    continue;
+                }
+
+                operationEvaluationContext.Results.Fail($"'{method}' does not match '{operationMethod}'");
             }
 
-            _evaluationContext.Results.Fail($"'{method}' does not match '{evaluatedMethod}'");
+            return operationEvaluator != null;
         }
     }
 }

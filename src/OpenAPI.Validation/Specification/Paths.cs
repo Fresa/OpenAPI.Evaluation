@@ -39,15 +39,16 @@ public sealed partial class Paths
         }
 
         internal bool TryMatch(Uri uri, 
-            [NotNullWhen(true)] out PathItem? pathItem,
-            [NotNullWhen(true)] out RoutePattern? routePattern)
+            [NotNullWhen(true)] out PathItem.Evaluator? pathItemEvaluator)
         {
-            pathItem = null;
-            routePattern = null;
+            pathItemEvaluator = null;
+            if (uri.IsAbsoluteUri)
+            {
+                _openApiEvaluationContext.Results.Fail($"{uri} must be a path relative to the server");
+                return false;
+            }
 
-            var path = uri.AbsolutePath;
-            var requestedPathSegments = uri.Segments;
-
+            var requestedPathSegments = uri.OriginalString.Split('/', StringSplitOptions.RemoveEmptyEntries);
             foreach (var pathEvaluationContext in _openApiEvaluationContext.EvaluateChildren())
             {
                 var pathTemplate = pathEvaluationContext.GetKey();
@@ -55,7 +56,7 @@ public sealed partial class Paths
                 var apiPathSegments = pathTemplate.Split('/', StringSplitOptions.RemoveEmptyEntries);
                 if (apiPathSegments.Length != requestedPathSegments.Length)
                 {
-                    pathEvaluationContext.Results.Fail(DoesNotMatchPathErrorMessage());
+                    DoesNotMatchPath();
                     continue;
                 }
 
@@ -80,18 +81,18 @@ public sealed partial class Paths
 
                 if (!match)
                 {
-                    pathEvaluationContext.Results.Fail(DoesNotMatchPathErrorMessage());
+                    DoesNotMatchPath();
                     continue;
                 }
 
-                // todo
-                routePattern = new RoutePattern(pathTemplate, routeValues);
-                pathItem = _paths.PathItems[pathTemplate];
+                var routePattern = new RoutePattern(pathTemplate, routeValues);
+                var pathItem = _paths.PathItems[pathTemplate];
+                pathItemEvaluator = pathItem.GetEvaluator(pathEvaluationContext, routePattern);
 
-                string DoesNotMatchPathErrorMessage() => $"'{path}' does not match '{pathTemplate}'";
+                void DoesNotMatchPath() => pathEvaluationContext.Results.Fail($"'{string.Join('/', requestedPathSegments)}' does not match '{string.Join('/', apiPathSegments)}'");
             }
 
-            return pathItem != null;
+            return pathItemEvaluator != null;
         }
     }
 }

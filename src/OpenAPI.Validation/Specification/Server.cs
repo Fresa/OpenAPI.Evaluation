@@ -4,20 +4,19 @@ public partial class Server
 {
     private readonly JsonNodeReader _reader;
 
-    internal Server(JsonNodeReader reader)
+    private Server(JsonNodeReader reader)
     {
         _reader = reader;
-    }
 
-    private UrlObject? _url;
-
-    public UrlObject Url
-    {
-        get
-        {
-            return _url ??= new UrlObject(_reader.Read("url"));
-        }
+        var url = _reader.Read("url").GetValue<string>().Trim();
+        if (!url.EndsWith('/'))
+            url += "/";
+        Url = new Uri(url);
     }
+    
+    internal static Server Parse(JsonNodeReader reader) => new(reader);
+
+    public Uri Url { get; }
 
     internal Evaluator GetEvaluator(OpenApiEvaluationContext openApiEvaluationContext)
     {
@@ -35,74 +34,56 @@ public partial class Server
             _server = server;
         }
 
-        internal OpenApiEvaluationResults Evaluate(Uri uri)
+        internal bool TryMatch(Uri uri, out Uri? relativeUri)
         {
-            var evaluator = _server.Url.GetEvaluator(_openApiEvaluationContext);
-            var results = evaluator.Evaluate(uri);
-
-            return _openApiEvaluationContext.Results;
-        }
-    }
-
-    public partial class UrlObject
-    {
-        private readonly JsonNodeReader _reader;
-
-        internal UrlObject(JsonNodeReader reader)
-        {
-            _reader = reader;
-        }
-
-        private Uri? _value;
-        public Uri Value => _value ??= new Uri(_reader.GetValue<string>(), UriKind.RelativeOrAbsolute);
-
-        internal Evaluator GetEvaluator(OpenApiEvaluationContext openApiEvaluationContext)
-        {
-            return new Evaluator(openApiEvaluationContext.Evaluate(_reader), this);
-        }
-
-        internal class Evaluator
-        {
-            private readonly OpenApiEvaluationContext _openApiEvaluationContext;
-            private readonly Uri _value;
-
-            internal Evaluator(OpenApiEvaluationContext openApiEvaluationContext, UrlObject urlObject)
+            relativeUri = null;
+            
+            if (_server.Url.IsAbsoluteUri)
             {
-                _openApiEvaluationContext = openApiEvaluationContext;
-                _value = urlObject.Value;
-            }
-
-            internal OpenApiEvaluationResults Evaluate(Uri uri)
-            {
-                var results = _openApiEvaluationContext.Results;
-
-                if (uri == _value)
-                    return results;
-
-                if (!_value.IsAbsoluteUri)
-                {
-                    if (uri.AbsolutePath.StartsWith(_value.AbsolutePath))
-                        return results;
-                    DoesNotMatch();
-                    return results;
-                }
-
-                // todo: Match against server variables
-                var relativeUri = _value.MakeRelativeUri(uri);
-                if (relativeUri == uri)
+                if (!uri.IsAbsoluteUri)
                 {
                     DoesNotMatch();
-                    return results;
+                    return false;
                 }
 
-                return results;
-
-                void DoesNotMatch()
-                {
-                    _openApiEvaluationContext.Results.Fail($"{uri} does not match url {_value}");
-                }
+                relativeUri = _server.Url.MakeRelativeUri(uri);
+                if (relativeUri != uri) 
+                    return true;
+                
+                relativeUri = null;
+                DoesNotMatch();
+                return false;
             }
 
+            if (uri.IsAbsoluteUri)
+            {
+                DoesNotMatch();
+                return false;
+            }
+
+            var serverPathSegments = _server.Url.OriginalString.Split('/', StringSplitOptions.RemoveEmptyEntries);
+            var uriPathSegments = uri.OriginalString.Split('/', StringSplitOptions.RemoveEmptyEntries);
+            if (serverPathSegments.Length > uriPathSegments.Length)
+            {
+                DoesNotMatch();
+                return false;
+            }
+
+            // todo: match against server variables
+            if (serverPathSegments.SequenceEqual(uriPathSegments.Take(serverPathSegments.Length)))
+            {
+                var relativeSegments = uriPathSegments.Skip(serverPathSegments.Length);
+                relativeUri = new Uri("/" + string.Join('/', relativeSegments), UriKind.Relative);
+                return true;
+            }
+
+            DoesNotMatch();
+            return false;
+
+            void DoesNotMatch()
+            {
+                _openApiEvaluationContext.Results.Fail($"{uri} does not match url {_server.Url}");
+            }
         }
     }
 }

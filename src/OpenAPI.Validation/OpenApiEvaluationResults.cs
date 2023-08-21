@@ -21,6 +21,7 @@ public class OpenApiEvaluationResults
     private Func<bool> DetailsIsValid { get; set; }
     internal void AllDetails() => DetailsIsValid = () => (Details?.All(results => results.IsValid) ?? true);
     internal void AnyDetails() => DetailsIsValid = () => (Details?.Any(results => results.IsValid) ?? true);
+    internal void OneDetail() => DetailsIsValid = () => Details?.Count(results => results.IsValid) == 1;
 
     public required JsonPointer EvaluationPath { get; init; }
     public required Uri SpecificationLocation { get; init; }
