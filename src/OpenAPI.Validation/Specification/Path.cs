@@ -52,7 +52,7 @@ public sealed partial class Path
         return new Evaluator(openApiEvaluationContext.Evaluate(Reader), this, routePattern);
     }
 
-    internal class Evaluator
+    internal sealed class Evaluator
     {
         private readonly OpenApiEvaluationContext _openApiEvaluationContext;
         private readonly Path _pathItem;
@@ -67,22 +67,20 @@ public sealed partial class Path
             _routePattern = routePattern;
         }
         
-        internal bool TryMatch(string method, [NotNullWhen(true)] out Operation.Evaluator operationEvaluator)
+        internal bool TryMatch(string method, [NotNullWhen(true)] out Operation.Evaluator? operationEvaluator)
         {
-            operationEvaluator = null;
             foreach (var (operationMethod, operationObject) in _pathItem.Operations)
             {
-                var operationEvaluationContext = _openApiEvaluationContext.Evaluate(operationMethod);
-                if (operationMethod.Equals(method, StringComparison.CurrentCultureIgnoreCase))
-                {
-                    operationEvaluator = operationObject.GetEvaluator(operationEvaluationContext, _routePattern);
+                if (!operationMethod.Equals(method, StringComparison.CurrentCultureIgnoreCase)) 
                     continue;
-                }
 
-                operationEvaluationContext.Results.Fail($"'{method}' does not match '{operationMethod}'");
+                operationEvaluator = operationObject.GetEvaluator(_openApiEvaluationContext, _routePattern);
+                return true;
             }
 
-            return operationEvaluator != null;
+            _openApiEvaluationContext.Results.Fail($"'{method}' does not match any of the operations '{string.Join(", ", _pathItem.Operations.Keys)}'");
+            operationEvaluator = null;
+            return false;
         }
     }
 }
