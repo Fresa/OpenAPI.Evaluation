@@ -12,7 +12,7 @@ public sealed partial class Operation
     {
         _reader = reader;
 
-        if (_reader.TryRead("mediaType", out var requestBodyReader))
+        if (_reader.TryRead("requestBody", out var requestBodyReader))
         {
             RequestBody = RequestBody.Parse(requestBodyReader);
         }
@@ -38,8 +38,6 @@ public sealed partial class Operation
             RoutePattern routePattern)
         {
             _openApiEvaluationContext = openApiEvaluationContext;
-            _openApiEvaluationContext.Results.OneDetail();
-
             _operation = operation;
             _routePattern = routePattern;
         }
