@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using OpenAPI.Validation.Extensions;
 
 namespace OpenAPI.Validation.Specification;
 
@@ -46,7 +47,7 @@ public sealed partial class Paths
                 return false;
             }
 
-            var requestedPathSegments = uri.OriginalString.Split('/', StringSplitOptions.RemoveEmptyEntries);
+            var requestedPathSegments = uri.GetPathSegments();
             foreach (var (pathTemplate, pathItem) in _paths.PathItems)
             {
                 var apiPathSegments = pathTemplate.Split('/', StringSplitOptions.RemoveEmptyEntries);

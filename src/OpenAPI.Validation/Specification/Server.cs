@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using UriExtensions = OpenAPI.Validation.Extensions.UriExtensions;
 
 namespace OpenAPI.Validation.Specification;
 
@@ -63,8 +64,8 @@ public partial class Server
                 return false;
             }
 
-            var serverPathSegments = _server.Url.OriginalString.Split('/', StringSplitOptions.RemoveEmptyEntries);
-            var uriPathSegments = uri.OriginalString.Split('/', StringSplitOptions.RemoveEmptyEntries);
+            var serverPathSegments = UriExtensions.GetPathSegments(_server.Url);
+            var uriPathSegments = UriExtensions.GetPathSegments(uri);
             if (serverPathSegments.Length > uriPathSegments.Length)
             {
                 DoesNotMatch();
