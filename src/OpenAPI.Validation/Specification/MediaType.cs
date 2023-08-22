@@ -1,5 +1,4 @@
 using System.Text.Json.Nodes;
-using Json.Pointer;
 
 namespace OpenAPI.Validation.Specification;
 
@@ -7,13 +6,13 @@ public sealed partial class MediaType
 {
     private readonly JsonNodeReader _reader;
 
-    internal MediaType(JsonNodeReader reader)
+    private MediaType(JsonNodeReader reader)
     {
         _reader = reader;
 
         if (_reader.TryRead("schema", out var schemaReader))
         {
-            Schema = schemaReader.RootPath;
+            Schema = Schema.Parse(schemaReader);
         }
     }
 
@@ -22,8 +21,11 @@ public sealed partial class MediaType
         return new MediaType(reader);
     }
 
-    public JsonPointer? Schema { get; }
+    public Schema? Schema { get; }
 
+    internal Evaluator GetEvaluator(OpenApiEvaluationContext openApiEvaluationContext) =>
+        new(openApiEvaluationContext.Evaluate(_reader), this);
+    
     public class Evaluator
     {
         private readonly OpenApiEvaluationContext _openApiEvaluationContext;
@@ -37,7 +39,9 @@ public sealed partial class MediaType
 
         public void EvaluateBody(JsonNode? body)
         {
-            // todo
+            _mediaType.Schema?
+                .GetEvaluator(_openApiEvaluationContext)
+                .Evaluate(body);
         }
     }
 }

@@ -1,5 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
-using UriExtensions = OpenAPI.Validation.Extensions.UriExtensions;
+using UriExtensions = OpenAPI.Validation.Http.UriExtensions;
 
 namespace OpenAPI.Validation.Specification;
 

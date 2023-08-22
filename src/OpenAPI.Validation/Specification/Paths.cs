@@ -1,5 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
-using OpenAPI.Validation.Extensions;
+using OpenAPI.Validation.Http;
 
 namespace OpenAPI.Validation.Specification;
 

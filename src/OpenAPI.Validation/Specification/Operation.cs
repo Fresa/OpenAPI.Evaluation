@@ -1,6 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Net.Http.Headers;
 using System.Text.Json.Nodes;
+using OpenAPI.Validation.Http;
 
 namespace OpenAPI.Validation.Specification;
 
@@ -42,10 +43,10 @@ public sealed partial class Operation
             _routePattern = routePattern;
         }
         
-        internal bool TryMatch(string mediaType,
-            [NotNullWhen(true)] out MediaType? mediaTypeObject)
+        internal bool TryMatchRequestContent(MediaTypeValue mediaType,
+            [NotNullWhen(true)] out MediaType.Evaluator? mediaTypeEvaluator)
         {
-            mediaTypeObject = null;
+            mediaTypeEvaluator = null;
             if (_operation.RequestBody == null)
             {
                 _openApiEvaluationContext.Results.Fail("Operation does not define a request body");
@@ -53,20 +54,9 @@ public sealed partial class Operation
             }
 
             var requestBodyEvaluator = _operation.RequestBody.GetEvaluator(_openApiEvaluationContext);
-            return requestBodyEvaluator.TryMatch(mediaType, out mediaTypeObject);
+            return requestBodyEvaluator.TryMatch(mediaType, out mediaTypeEvaluator);
         }
-
-        public void EvaluateRequestContent(JsonNode? content)
-        {
-            if (!_openApiEvaluationContext.TryEvaluate("requestBody", out var requestEvaluationContext))
-            {
-                return;
-            }
-
-            var requestBodySchemaEvaluationResults = requestEvaluationContext.Evaluate("content", "application/json", "schema");
-            requestBodySchemaEvaluationResults.EvaluateAgainstSchema(content);
-        }
-
+        
         public void EvaluateRequestHeaders(HttpRequestHeaders headers)
         {
             var parametersEvaluationContext = _openApiEvaluationContext.Evaluate("parameters");

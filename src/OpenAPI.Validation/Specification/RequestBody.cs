@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using OpenAPI.Validation.Http;
 
 namespace OpenAPI.Validation.Specification;
 
@@ -13,17 +14,23 @@ public sealed partial class RequestBody
         var contentReader = _reader.Read("content");
         foreach (var mediaTypeReader in contentReader.ReadChildren())
         {
-            _content.Add(mediaTypeReader.Key, MediaType.Parse(mediaTypeReader));
+            _content.Add(
+                new MediaTypeRange(MediaTypeValue.Parse(mediaTypeReader.Key)), 
+                MediaType.Parse(mediaTypeReader));
         }
 
+        _content = _content
+            .OrderByDescending(pair => pair.Key.Precedence)
+            .ToDictionary(pair => pair.Key, pair => pair.Value);
     }
+
     internal static RequestBody Parse(JsonNodeReader reader)
     {
         return new RequestBody(reader);
     }
 
-    private readonly Dictionary<string, MediaType> _content = new();
-    public IReadOnlyDictionary<string, MediaType> Content => _content.AsReadOnly();
+    private readonly Dictionary<MediaTypeRange, MediaType> _content = new();
+    public IReadOnlyDictionary<MediaTypeRange, MediaType> Content => _content.AsReadOnly();
     internal Evaluator GetEvaluator(OpenApiEvaluationContext openApiEvaluationContext) =>
         new(openApiEvaluationContext.Evaluate(_reader), this);
 
@@ -38,10 +45,21 @@ public sealed partial class RequestBody
             _requestBody = requestBody;
         }
 
-        internal bool TryMatch(string mediaType,
-            [NotNullWhen(true)] out MediaType? pathItem)
+        internal bool TryMatch(MediaTypeValue mediaType,
+            [NotNullWhen(true)] out MediaType.Evaluator? mediaTypeEvaluator)
         {
-            pathItem = null;
+            foreach (var (mediaTypeRange, mediaTypeItem) in _requestBody.Content)
+            {
+                if (!mediaTypeRange.Matches(mediaType)) 
+                    continue;
+
+                mediaTypeEvaluator = mediaTypeItem.GetEvaluator(_openApiEvaluationContext);
+                return true;
+            }
+
+            _openApiEvaluationContext.Results.Fail(
+                $"Request content media type '{mediaType}' does not match any of the defined media type ranges {string.Join(", ", _requestBody.Content.Keys)}");
+            mediaTypeEvaluator = null;
             return false;
         }
     }
