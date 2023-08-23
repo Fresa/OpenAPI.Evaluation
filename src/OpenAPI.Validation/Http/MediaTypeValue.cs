@@ -17,7 +17,7 @@ public sealed record MediaTypeValue
 
         var type = value[..subTypeIndex];
         if (type.Length < 1)
-            throw new ArgumentException("type is to short");
+            throw new ArgumentException("type is too short");
 
         var rest = value[(subTypeIndex + 1)..];
         var parameterIndex = rest.IndexOf(';');
@@ -30,7 +30,7 @@ public sealed record MediaTypeValue
         }
         var subType = rest[..parameterIndex].Trim();
         if (subType.Length < 1)
-            throw new ArgumentException("sub type is to short");
+            throw new ArgumentException("sub type is too short");
        
         return new MediaTypeValue(type, subType, parameter);
     }
@@ -38,16 +38,23 @@ public sealed record MediaTypeValue
     public override string ToString() => 
         $"{Type}/{SubType}{(Parameter == null ? "" : $"; {Parameter}")}";
 
+    private static readonly StringComparer StringComparer = StringComparer.InvariantCultureIgnoreCase;
+    private static readonly StringComparison StringComparison = StringComparison.InvariantCultureIgnoreCase;
     public bool Equals(MediaTypeValue? other)
     {
         if (ReferenceEquals(null, other)) return false;
         if (ReferenceEquals(this, other)) return true;
-        return Type == other.Type && SubType == other.SubType && Parameter == other.Parameter;
+        return Type.Equals(other.Type, StringComparison) && SubType.Equals(other.SubType, StringComparison) &&
+               (Parameter?.Equals(other.Parameter, StringComparison) ?? other.Parameter == null);
     }
 
     public override int GetHashCode()
     {
-        return HashCode.Combine(Type, SubType, Parameter);
+        var hash = new HashCode();
+        hash.Add(Type, StringComparer);
+        hash.Add(SubType, StringComparer);
+        hash.Add(Parameter, StringComparer);
+        return hash.ToHashCode();
     }
 
     public string Type { get; }
