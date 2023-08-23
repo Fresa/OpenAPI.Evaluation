@@ -17,6 +17,11 @@ public sealed partial class Operation
         {
             RequestBody = RequestBody.Parse(requestBodyReader);
         }
+
+        if (_reader.TryRead("parameters", out var parametersReader))
+        {
+            Parameters = Parameters.Parse(parametersReader);
+        }
     }
 
     internal static Operation Parse(JsonNodeReader reader)
@@ -25,6 +30,8 @@ public sealed partial class Operation
     }
 
     public RequestBody? RequestBody { get; }
+
+    public Parameters? Parameters { get; }
 
     internal Evaluator GetEvaluator(OpenApiEvaluationContext openApiEvaluationContext, RoutePattern routePattern) =>
         new(openApiEvaluationContext.Evaluate(_reader), this, routePattern);
@@ -56,82 +63,20 @@ public sealed partial class Operation
             var requestBodyEvaluator = _operation.RequestBody.GetEvaluator(_openApiEvaluationContext);
             return requestBodyEvaluator.TryMatch(mediaType, out mediaTypeEvaluator);
         }
-        
+
         public void EvaluateRequestHeaders(HttpRequestHeaders headers)
         {
-            var parametersEvaluationContext = _openApiEvaluationContext.Evaluate("parameters");
-            foreach (var parameterEvaluationContext in parametersEvaluationContext.EvaluateChildren())
-            {
-                if (parameterEvaluationContext.GetValue<string>("in") != "header")
-                    continue;
-
-                var name = parameterEvaluationContext.GetValue<string>("name");
-                if (!headers.TryGetValues(name, out var stringValues))
-                {
-                    if (parameterEvaluationContext.TryGetValue<bool>("required", out var required) &&
-                        required)
-                    {
-                        parameterEvaluationContext.EvaluateAsRequired(name);
-                    }
-                    continue;
-                }
-
-                var parameterSchemaEvaluationResults = parameterEvaluationContext.Evaluate("schema");
-                parameterSchemaEvaluationResults.EvaluateAgainstSchema(stringValues.ToArray());
-            }
+            _operation.Parameters?.GetEvaluator(_openApiEvaluationContext).EvaluateHeaders(headers);
         }
-
+        
         public void EvaluateRequestPathParameters()
         {
-            var parametersEvaluationContext = _openApiEvaluationContext.Evaluate("parameters");
-            foreach (var parameterEvaluationContext in parametersEvaluationContext.EvaluateChildren())
-            {
-                if (parameterEvaluationContext.GetValue<string>("in") != "path")
-                    continue;
-
-                var name = parameterEvaluationContext.GetValue<string>("name");
-                if (!_routePattern.Values.TryGetValue(name, out var routeValue))
-                {
-                    throw new InvalidOperationException(
-                        $"The endpoint {_routePattern.Template} is invalid as it does not contain the defined path parameter {name} specified at {parameterEvaluationContext.Results.SpecificationLocation}");
-                }
-
-                var parameterSchemaEvaluationResults = parameterEvaluationContext.Evaluate("schema");
-                var value = JsonValue.Create(routeValue);
-                parameterSchemaEvaluationResults.EvaluateAgainstSchema(value);
-            }
+            _operation.Parameters?.GetEvaluator(_openApiEvaluationContext).EvaluatePath(_routePattern);
         }
 
         public void EvaluateRequestQueryParameters(Uri uri)
         {
-            var querystring = uri.Query;
-            if (string.IsNullOrEmpty(querystring))
-            {
-                return;
-            }
-            var queryParameters = System.Web.HttpUtility.ParseQueryString(querystring);
-
-            var parametersEvaluationContext = _openApiEvaluationContext.Evaluate("parameters");
-            foreach (var parameterEvaluationContext in parametersEvaluationContext.EvaluateChildren())
-            {
-                if (parameterEvaluationContext.GetValue<string>("in") != "query")
-                    continue;
-
-                var name = parameterEvaluationContext.GetValue<string>("name");
-                var stringValues = queryParameters.GetValues(name);
-                if (stringValues == null)
-                {
-                    if (parameterEvaluationContext.TryGetValue<bool>("required", out var required) &&
-                        required)
-                    {
-                        parameterEvaluationContext.EvaluateAsRequired(name);
-                    }
-                    continue;
-                }
-
-                var parameterSchemaEvaluationResults = parameterEvaluationContext.Evaluate("schema");
-                parameterSchemaEvaluationResults.EvaluateAgainstSchema(stringValues);
-            }
+            _operation.Parameters?.GetEvaluator(_openApiEvaluationContext).EvaluateQuery(uri);
         }
     }
 }

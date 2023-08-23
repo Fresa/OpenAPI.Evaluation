@@ -32,5 +32,10 @@ public sealed partial class Schema
         {
             _openApiEvaluationContext.EvaluateAgainstSchema(instance);
         }
+
+        public void Evaluate(IEnumerable<string?> stringValues)
+        {
+            _openApiEvaluationContext.EvaluateAgainstSchema(stringValues);
+        }
     }
 }
