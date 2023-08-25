@@ -51,7 +51,7 @@ public sealed partial class Operation
             _routePattern = routePattern;
         }
 
-        internal bool TryMatchRequestContent(MediaTypeValue mediaType,
+        public bool TryMatchRequestContent(MediaTypeValue mediaType,
             [NotNullWhen(true)] out MediaType.Evaluator? mediaTypeEvaluator)
         {
             mediaTypeEvaluator = null;
@@ -63,6 +63,14 @@ public sealed partial class Operation
 
             var requestBodyEvaluator = _operation.RequestBody.GetEvaluator(_openApiEvaluationContext);
             return requestBodyEvaluator.TryMatch(mediaType, out mediaTypeEvaluator);
+        }
+
+        public void EvaluateMissingRequestBody()
+        {
+            if (_operation.RequestBody?.IsRequired ?? false)
+            {
+                _openApiEvaluationContext.Results.Fail("Request body is required");
+            }
         }
 
         public void EvaluateRequestHeaders(HttpRequestHeaders headers)

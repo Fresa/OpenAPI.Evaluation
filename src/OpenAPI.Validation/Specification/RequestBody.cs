@@ -13,11 +13,15 @@ public sealed partial class RequestBody
         
         var contentReader = _reader.Read("content");
         Content = RequestBodyContent.Parse(contentReader);
+
+        IsRequired = _reader.TryRead("required", out var requiredReader) && 
+                     requiredReader.GetValue<bool>();
     }
 
     internal static RequestBody Parse(JsonNodeReader reader) => new(reader);
 
     public RequestBodyContent Content { get; }
+    public bool IsRequired { get; }
 
     internal Evaluator GetEvaluator(OpenApiEvaluationContext openApiEvaluationContext) =>
         new(openApiEvaluationContext.Evaluate(_reader), this);
