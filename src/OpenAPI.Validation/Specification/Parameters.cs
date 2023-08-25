@@ -1,4 +1,6 @@
 using System.Collections;
+using System.Net.Http;
+using System.Net;
 using System.Net.Http.Headers;
 
 namespace OpenAPI.Validation.Specification;
@@ -86,6 +88,26 @@ public sealed partial class Parameters : IEnumerable<Parameter>
             foreach (var parameter in _parameters.OfType<QueryParameter>())
             {
                 parameter.GetEvaluator(_openApiEvaluationContext).Evaluate(queryParameters);
+            }
+        }
+
+        internal void EvaluateCookies(Uri requestUri, HttpRequestHeaders requestHeaders)
+        {
+            if (!requestHeaders.TryGetValues("Cookie", out var cookieValueList))
+            {
+                return;
+            }
+
+            var cookieContainer = new CookieContainer();
+            foreach (var value in cookieValueList)
+            {
+                cookieContainer.SetCookies(requestUri, value);
+            }
+            var cookies = cookieContainer.GetCookies(requestUri);
+
+            foreach (var parameter in _parameters.OfType<CookieParameter>())
+            {
+                parameter.GetEvaluator(_openApiEvaluationContext).Evaluate(cookies);
             }
         }
     }

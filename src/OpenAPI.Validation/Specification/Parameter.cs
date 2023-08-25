@@ -6,7 +6,7 @@ public abstract partial class Parameter
 {
     private readonly JsonNodeReader _reader;
 
-    internal static class Location
+    protected static class Location
     {
         public const string Header = "header";
         public const string Path = "path";
@@ -57,6 +57,9 @@ public abstract partial class Parameter
                 return success;
             case Location.Query:
                 parameter = QueryParameter.Parse(reader);
+                return true;
+            case Location.Cookie:
+                parameter = CookieParameter.Parse(reader);
                 return true;
             default:
                 throw new InvalidOperationException($"Valid '{Keys.In}' values are {string.Join(", ", Location.All)}, got '{@in}'");

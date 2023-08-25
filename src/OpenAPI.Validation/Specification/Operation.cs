@@ -78,5 +78,10 @@ public sealed partial class Operation
         {
             _operation.Parameters?.GetEvaluator(_openApiEvaluationContext).EvaluateQuery(uri);
         }
+
+        public void EvaluateRequestCookies(Uri requestUri, HttpRequestHeaders headers)
+        {
+            _operation.Parameters?.GetEvaluator(_openApiEvaluationContext).EvaluateCookies(requestUri, headers);
+        }
     }
 }
