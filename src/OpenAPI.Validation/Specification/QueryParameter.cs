@@ -9,12 +9,19 @@ public sealed class QueryParameter : Parameter
     private QueryParameter(JsonNodeReader reader) : base(reader)
     {
         _reader = reader;
-        AssertLocation(Location.Query);
         Required = ReadRequired() ?? false;
+        Name = ReadName();
+        In = ReadIn();
+        Schema = ReadSchema();
+
+        AssertLocation(Location.Query);
     }
 
     internal static QueryParameter Parse(JsonNodeReader reader) => new(reader);
-    public override bool Required { get; }
+    public override string Name { get; protected init; }
+    public override string In { get; protected init; }
+    public override bool Required { get; protected init; }
+    public override Schema? Schema { get; protected init; }
 
     internal Evaluator GetEvaluator(OpenApiEvaluationContext openApiEvaluationContext)
     {

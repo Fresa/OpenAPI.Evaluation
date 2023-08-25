@@ -9,14 +9,26 @@ public sealed class PathParameter : Parameter
     private PathParameter(JsonNodeReader reader) : base(reader)
     {
         _reader = reader;
+        
+        Required = ReadRequired() switch
+        {
+            true => true,
+            false => throw new InvalidOperationException($"'{Keys.Required}' must be true"),
+            null => throw new InvalidOperationException($"'{Keys.Required}' is required")
+        };
+        Name = ReadName();
+        In = ReadIn();
+        Schema = ReadSchema();
+
         AssertLocation(Location.Path);
-        if (ReadRequired() is null or false)
-            throw new InvalidOperationException($"'{Keys.Required}' is required and must be true");
     }
 
     internal static PathParameter Parse(JsonNodeReader reader) => new(reader);
 
-    public override bool Required => true;
+    public override string Name { get; protected init; }
+    public override string In { get; protected init; }
+    public override bool Required { get; protected init; }
+    public override Schema? Schema { get; protected init; }
 
     internal Evaluator GetEvaluator(OpenApiEvaluationContext openApiEvaluationContext)
     {
@@ -48,5 +60,4 @@ public sealed class PathParameter : Parameter
             _parameter.Schema?.GetEvaluator(_openApiEvaluationContext).Evaluate(JsonValue.Create(value));
         }
     }
-
 }

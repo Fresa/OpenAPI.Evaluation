@@ -10,13 +10,20 @@ public sealed class CookieParameter : Parameter
     private CookieParameter(JsonNodeReader reader) : base(reader)
     {
         _reader = reader;
-        AssertLocation(Location.Cookie);
         Required = ReadRequired() ?? false;
+        Name = ReadName();
+        In = ReadIn();
+        Schema = ReadSchema();
+
+        AssertLocation(Location.Cookie);
     }
 
     internal static CookieParameter Parse(JsonNodeReader reader) => new(reader);
 
-    public override bool Required { get; }
+    public override string Name { get; protected init; }
+    public override string In { get; protected init; }
+    public override bool Required { get; protected init; }
+    public override Schema? Schema { get; protected init; }
 
     internal Evaluator GetEvaluator(OpenApiEvaluationContext openApiEvaluationContext)
     {
@@ -50,4 +57,5 @@ public sealed class CookieParameter : Parameter
             _parameter.Schema?.GetEvaluator(_openApiEvaluationContext).Evaluate(cookieValue);
         }
     }
+
 }

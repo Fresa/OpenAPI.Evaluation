@@ -1,6 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Net.Http.Headers;
-using System.Text.Json.Nodes;
 using OpenAPI.Validation.Http;
 
 namespace OpenAPI.Validation.Specification;
@@ -22,16 +21,18 @@ public sealed partial class Operation
         {
             Parameters = Parameters.Parse(parametersReader);
         }
+
+        if (_reader.TryRead("responses", out var responsesReader))
+        {
+            Responses = Responses.Parse(responsesReader);
+        }
     }
 
-    internal static Operation Parse(JsonNodeReader reader)
-    {
-        return new Operation(reader);
-    }
+    internal static Operation Parse(JsonNodeReader reader) => new(reader);
 
     public RequestBody? RequestBody { get; }
-
     public Parameters? Parameters { get; }
+    public Responses? Responses { get; }
 
     internal Evaluator GetEvaluator(OpenApiEvaluationContext openApiEvaluationContext, RoutePattern routePattern) =>
         new(openApiEvaluationContext.Evaluate(_reader), this, routePattern);
@@ -49,7 +50,7 @@ public sealed partial class Operation
             _operation = operation;
             _routePattern = routePattern;
         }
-        
+
         internal bool TryMatchRequestContent(MediaTypeValue mediaType,
             [NotNullWhen(true)] out MediaType.Evaluator? mediaTypeEvaluator)
         {
@@ -68,7 +69,7 @@ public sealed partial class Operation
         {
             _operation.Parameters?.GetEvaluator(_openApiEvaluationContext).EvaluateHeaders(headers);
         }
-        
+
         public void EvaluateRequestPathParameters()
         {
             _operation.Parameters?.GetEvaluator(_openApiEvaluationContext).EvaluatePath(_routePattern);
@@ -82,6 +83,20 @@ public sealed partial class Operation
         public void EvaluateRequestCookies(Uri requestUri, HttpRequestHeaders headers)
         {
             _operation.Parameters?.GetEvaluator(_openApiEvaluationContext).EvaluateCookies(requestUri, headers);
+        }
+
+        internal bool TryMatchResponse(int statusCode,
+            [NotNullWhen(true)] out Response.Evaluator? responseEvaluator)
+        {
+            if (_operation.Responses != null)
+            {
+                return _operation.Responses.GetEvaluator(_openApiEvaluationContext)
+                    .TryMatchResponseContent(statusCode, out responseEvaluator);
+            }
+
+            _openApiEvaluationContext.Results.Fail("There are no responses defined");
+            responseEvaluator = null;
+            return false;
         }
     }
 }

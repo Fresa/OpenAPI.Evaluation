@@ -26,17 +26,14 @@ public abstract partial class Parameter
     private protected Parameter(JsonNodeReader reader)
     {
         _reader = reader;
-        Name = ReadName();
-        In = ReadIn();
-        Schema = ReadSchema();
     }
 
     protected bool? ReadRequired() =>
         _reader.TryRead(Keys.Required, out var requiredReader) ? requiredReader.GetValue<bool>() : null;
 
-    private string ReadName() => _reader.Read(Keys.Name).GetValue<string>();
-    private string ReadIn() => _reader.Read(Keys.In).GetValue<string>();
-    private Schema? ReadSchema() => _reader.TryRead(Keys.Schema, out var schemaReader) ? Schema.Parse(schemaReader) : null;
+    protected string ReadName() => _reader.Read(Keys.Name).GetValue<string>();
+    protected string ReadIn() => _reader.Read(Keys.In).GetValue<string>();
+    protected Schema? ReadSchema() => _reader.TryRead(Keys.Schema, out var schemaReader) ? Schema.Parse(schemaReader) : null;
     protected void AssertLocation(string location)
     {
         if (location != In)
@@ -52,7 +49,7 @@ public abstract partial class Parameter
                 parameter = PathParameter.Parse(reader);
                 return true;
             case Location.Header:
-                var success = HeaderParameter.TryParse(reader, out var headerParameter);
+                var success = HeaderParameter.TryParseRequestHeader(reader, out var headerParameter);
                 parameter = headerParameter;
                 return success;
             case Location.Query:
@@ -66,8 +63,8 @@ public abstract partial class Parameter
         }
     }
 
-    public string Name { get; }
-    public string In { get; }
-    public abstract bool Required { get; }
-    public Schema? Schema { get; }
+    public abstract string Name { get; protected init; }
+    public abstract string In { get; protected init; }
+    public abstract bool Required { get; protected init; }
+    public abstract Schema? Schema { get; protected init; }
 }

@@ -48,7 +48,7 @@ public sealed class MediaTypeRange
     public string? Parameter { get; }
     public ushort Precedence { get; }
 
-    public bool Matches(MediaTypeValue mediaType)
+    internal bool Matches(MediaTypeValue mediaType)
     {
         if ((Parameter == null && mediaType.Parameter != null) ||
             (Parameter != null && mediaType.Parameter == null))

@@ -10,21 +10,47 @@ public sealed class HeaderParameter : Parameter
     private HeaderParameter(JsonNodeReader reader) : base(reader)
     {
         _reader = reader;
-        AssertLocation(Location.Header);
         Required = ReadRequired() ?? false;
+        Name = ReadName();
+        In = ReadIn();
+        Schema = ReadSchema();
+
+        AssertLocation(Location.Header);
     }
 
-    private static readonly string[] IgnoredParameterNames = { "Accept", "Content-Type", "Authorization" };
-    internal static bool TryParse(JsonNodeReader reader, [NotNullWhen(true)] out HeaderParameter? parameter)
+    private HeaderParameter(JsonNodeReader reader, string name) : base(reader)
+    {
+        _reader = reader;
+        Required = ReadRequired() ?? false;
+        Name = name;
+        In = Location.Header;
+        Schema = ReadSchema();
+    }
+
+    private static readonly string[] IgnoredRequestHeaders = { "Accept", "Content-Type", "Authorization" };
+    internal static bool TryParseRequestHeader(JsonNodeReader reader, [NotNullWhen(true)] out HeaderParameter? parameter)
     {
         parameter = new HeaderParameter(reader);
-        var ignore = IgnoredParameterNames.Contains(parameter.Name, StringComparer.InvariantCultureIgnoreCase);
+        var ignore = IgnoredRequestHeaders.Contains(parameter.Name, StringComparer.InvariantCultureIgnoreCase);
         if (ignore)
             parameter = null;
         return !ignore;
     }
 
-    public override bool Required { get; }
+    private static readonly string[] IgnoredResponseHeaders = { "Content-Type" };
+    internal static bool TryParseResponseHeader(JsonNodeReader reader, string name, [NotNullWhen(true)] out HeaderParameter? parameter)
+    {
+        parameter = new HeaderParameter(reader, name);
+        var ignore = IgnoredResponseHeaders.Contains(parameter.Name, StringComparer.InvariantCultureIgnoreCase);
+        if (ignore)
+            parameter = null;
+        return !ignore;
+    }
+
+    public override string Name { get; protected init; }
+    public override string In { get; protected init; }
+    public override bool Required { get; protected init; }
+    public override Schema? Schema { get; protected init; }
 
     internal Evaluator GetEvaluator(OpenApiEvaluationContext openApiEvaluationContext)
     {
@@ -41,10 +67,10 @@ public sealed class HeaderParameter : Parameter
             _openApiEvaluationContext = openApiEvaluationContext;
             _parameter = parameter;
         }
-
-        internal void Evaluate(HttpRequestHeaders requestHeaders)
+        
+        internal void Evaluate(HttpHeaders headers)
         {
-            if (!requestHeaders.TryGetValues(_parameter.Name, out var stringValues))
+            if (!headers.TryGetValues(_parameter.Name, out var stringValues))
             {
                 if (_parameter.Required)
                 {
