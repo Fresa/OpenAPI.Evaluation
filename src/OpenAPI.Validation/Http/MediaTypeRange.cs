@@ -2,8 +2,11 @@ namespace OpenAPI.Validation.Http;
 
 public sealed class MediaTypeRange
 {
+    private readonly MediaTypeValue _value;
+
     internal MediaTypeRange(MediaTypeValue value)
     {
+        _value = value;
         Type = value.Type;
         SubType = value.SubType;
         Parameter = value.Parameter;
@@ -43,6 +46,8 @@ public sealed class MediaTypeRange
         return HashCode.Combine(Type, SubType, Parameter, Precedence);
     }
 
+    public override string ToString() => _value.ToString();
+
     public string Type { get; }
     public string SubType { get; }
     public string? Parameter { get; }
@@ -50,10 +55,6 @@ public sealed class MediaTypeRange
 
     internal bool Matches(MediaTypeValue mediaType)
     {
-        if ((Parameter == null && mediaType.Parameter != null) ||
-            (Parameter != null && mediaType.Parameter == null))
-            return false;
-
         if (Parameter != null && !Parameter.Equals(mediaType.Parameter, StringComparison.CurrentCultureIgnoreCase))
             return false;
 

@@ -28,7 +28,9 @@ public sealed record MediaTypeValue
             if (parameter.IndexOf('=') == -1)
                 throw new ArgumentException($"{parameter} is missing '='");
         }
-        var subType = rest[..parameterIndex].Trim();
+
+        var subType = (parameterIndex == -1 ? rest : rest[..parameterIndex])
+            .Trim();
         if (subType.Length < 1)
             throw new ArgumentException("sub type is too short");
        

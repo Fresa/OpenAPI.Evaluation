@@ -4,11 +4,11 @@ using OpenAPI.Validation.Http;
 
 namespace OpenAPI.Validation.Specification;
 
-public sealed class RequestBodyContent : IReadOnlyDictionary<MediaTypeRange, MediaType>
+public sealed class Content : IReadOnlyDictionary<MediaTypeRange, MediaType>
 {
     private readonly JsonNodeReader _reader;
 
-    internal RequestBodyContent(JsonNodeReader reader)
+    internal Content(JsonNodeReader reader)
     {
         _reader = reader;
 
@@ -24,9 +24,9 @@ public sealed class RequestBodyContent : IReadOnlyDictionary<MediaTypeRange, Med
             .ToDictionary(pair => pair.Key, pair => pair.Value);
     }
 
-    internal static RequestBodyContent Parse(JsonNodeReader reader)
+    internal static Content Parse(JsonNodeReader reader)
     {
-        return new RequestBodyContent(reader);
+        return new Content(reader);
     }
 
     private readonly Dictionary<MediaTypeRange, MediaType> _content = new();
@@ -51,9 +51,9 @@ public sealed class RequestBodyContent : IReadOnlyDictionary<MediaTypeRange, Med
     public class Evaluator
     {
         private readonly OpenApiEvaluationContext _openApiEvaluationContext;
-        private readonly RequestBodyContent _content;
+        private readonly Content _content;
 
-        internal Evaluator(OpenApiEvaluationContext openApiEvaluationContext, RequestBodyContent content)
+        internal Evaluator(OpenApiEvaluationContext openApiEvaluationContext, Content content)
         {
             _openApiEvaluationContext = openApiEvaluationContext;
             _content = content;
@@ -72,7 +72,7 @@ public sealed class RequestBodyContent : IReadOnlyDictionary<MediaTypeRange, Med
             }
 
             _openApiEvaluationContext.Results.Fail(
-                $"Request content media type '{mediaType}' does not match any of the defined media type ranges {string.Join(", ", _content.Keys)}");
+                $"Content media type '{mediaType}' does not match any of the defined media type ranges {string.Join(", ", _content.Keys.Select(range => range.ToString()))}");
             mediaTypeEvaluator = null;
             return false;
         }
