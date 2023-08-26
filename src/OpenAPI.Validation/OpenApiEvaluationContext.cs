@@ -1,5 +1,4 @@
 using System.Diagnostics.CodeAnalysis;
-using System.Text.Json;
 using System.Text.Json.Nodes;
 using Json.Pointer;
 using Json.Schema;
@@ -78,14 +77,7 @@ internal sealed class OpenApiEvaluationContext
     internal IEnumerable<OpenApiEvaluationContext> EvaluateChildren() =>
         _reader.ReadChildren().Select(reader =>
             new OpenApiEvaluationContext(_document, reader, Results.AddDetailsFrom(reader), _evaluationOptions));
-
-    internal void EvaluateAgainstSchema(JsonDocument instance)
-    {
-        var schema = ResolveSchema();
-        var result = schema.Evaluate(instance, _evaluationOptions);
-        Results.Report(result);
-    }
-
+    
     internal void EvaluateAgainstSchema(JsonNode? instance)
     {
         var schema = ResolveSchema();

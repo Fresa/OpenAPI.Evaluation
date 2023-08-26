@@ -61,8 +61,6 @@ public sealed partial class Path
         internal Evaluator(OpenApiEvaluationContext openApiEvaluationContext, Path pathItem, RoutePattern routePattern)
         {
             _openApiEvaluationContext = openApiEvaluationContext;
-            _openApiEvaluationContext.Results.OneDetail();
-
             _pathItem = pathItem;
             _routePattern = routePattern;
         }
