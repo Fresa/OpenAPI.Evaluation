@@ -48,7 +48,7 @@ public sealed class Response
             _response.Headers?.GetEvaluator(_openApiEvaluationContext).EvaluateRequestHeaders(headers);
         }
 
-        internal bool TryMatch(MediaTypeValue mediaType,
+        internal bool TryMatchResponseContent(MediaTypeValue mediaType,
             [NotNullWhen(true)] out MediaType.Evaluator? mediaTypeEvaluator)
         {
             if (_response.Content != null)
