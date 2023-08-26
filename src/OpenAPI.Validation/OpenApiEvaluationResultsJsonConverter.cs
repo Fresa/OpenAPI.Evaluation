@@ -6,8 +6,8 @@ namespace OpenAPI.Validation;
 internal class OpenApiEvaluationResultsJsonConverter : JsonConverter<OpenApiEvaluationResults>
 {
     public override OpenApiEvaluationResults? Read(
-        ref Utf8JsonReader reader, 
-        Type typeToConvert, 
+        ref Utf8JsonReader reader,
+        Type typeToConvert,
         JsonSerializerOptions options)
     {
         throw new NotImplementedException();
@@ -41,6 +41,21 @@ internal class OpenApiEvaluationResultsJsonConverter : JsonConverter<OpenApiEval
             writer.WritePropertyName("errors");
             JsonSerializer.Serialize(writer, value.Errors, options);
         }
+
+        if (value.Annotations != null)
+        {
+            if (value.IsValid)
+            {
+                writer.WritePropertyName("annotations");
+                JsonSerializer.Serialize(writer, value.Annotations, options);
+            }
+            else if (value.PreserveDroppedAnnotations)
+            {
+                writer.WritePropertyName("droppedAnnotations");
+                JsonSerializer.Serialize(writer, value.Annotations, options);
+            }
+        }
+
         writer.WriteEndObject();
     }
 }

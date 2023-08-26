@@ -45,7 +45,7 @@ public sealed partial class Servers
         internal Evaluator(OpenApiEvaluationContext openApiEvaluationContext, Servers servers)
         {
             _openApiEvaluationContext = openApiEvaluationContext;
-            _openApiEvaluationContext.Results.OneDetail();
+            _openApiEvaluationContext.Results.IsValidWhenExactlyOneDetailIsValid();
 
             _servers = servers;
         }

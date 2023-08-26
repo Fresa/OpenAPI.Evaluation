@@ -15,11 +15,17 @@ public partial class Server
         if (!url.EndsWith('/'))
             url += "/";
         Url = new Uri(url);
+
+        if (_reader.TryRead("description", out var descriptionReader))
+        {
+            Description = descriptionReader.GetValue<string>();
+        }
     }
     
     internal static Server Parse(JsonNodeReader reader) => new(reader);
 
     public Uri Url { get; }
+    public string? Description { get; }
 
     internal Evaluator GetEvaluator(OpenApiEvaluationContext openApiEvaluationContext)
     {

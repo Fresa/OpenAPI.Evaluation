@@ -24,7 +24,7 @@ internal sealed class OpenApiEvaluationContext
         _document = document;
         _reader = reader;
         _evaluationOptions = evaluationOptions;
-        Results = new OpenApiEvaluationResults
+        Results = new OpenApiEvaluationResults(evaluationOptions.PreserveDroppedAnnotations)
         {
             EvaluationPath = reader.Trail,
             SpecificationLocation = new(document.BaseUri, reader.RootPath.ToString(JsonPointerStyle.UriEncoded))
