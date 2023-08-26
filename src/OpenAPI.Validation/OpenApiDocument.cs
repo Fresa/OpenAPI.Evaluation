@@ -2,6 +2,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Nodes;
 using Json.Pointer;
 using Json.Schema;
+using OpenAPI.Validation.Specification;
 
 namespace OpenAPI.Validation;
 
@@ -21,7 +22,7 @@ public sealed class OpenApiDocument
     private readonly string _basePath;
     private readonly JsonNodeReader _document;
 
-    public OpenApiDocument(JsonNode document, Uri? baseUri = null)
+    private OpenApiDocument(JsonNode document, Uri? baseUri = null)
     {
         if (baseUri != null && !baseUri.IsAbsoluteUri)
             throw new ArgumentException("Base uri must be an absolute URI", nameof(baseUri));
@@ -38,8 +39,11 @@ public sealed class OpenApiDocument
         _baseDocument = new JsonNodeBaseDocument(document, baseUri);
         Json.Schema.OpenApi.Vocabularies.Register(_evaluationOptions.VocabularyRegistry, _evaluationOptions.SchemaRegistry);
         _evaluationOptions.SchemaRegistry.Register(_baseDocument);
-    }
 
+        Servers = Servers.Parse(_document.Read("servers"));
+        Paths = Paths.Parse(_document.Read("paths"));
+    }
+    
     private static Uri GetServerUri(JsonNodeReader reader)
     {
         var serverUrlPointer = JsonPointer.Parse("#/servers/0/url");
@@ -56,105 +60,39 @@ public sealed class OpenApiDocument
             throw new InvalidOperationException($"OpenAPI version {versionString} is not supported. Supported versions are [{_from}, {_to})");
     }
 
-    public bool TryGetApiOperation(HttpRequestMessage message, [NotNullWhen(true)] out OpenApiOperation? operation, out OpenApiEvaluationResults evaluationResults)
+    public static OpenApiDocument Parse(JsonNode document, Uri? baseUri = null) => new(document, baseUri);
+
+    public Servers Servers { get; }
+
+    public Paths Paths { get; }
+
+    public bool TryGetApiOperation(HttpRequestMessage message, [NotNullWhen(true)] out Operation.Evaluator? operation,
+        out OpenApiEvaluationResults evaluationResults)
     {
         var rootEvaluationContext = new OpenApiEvaluationContext(_baseDocument, _document, _evaluationOptions);
         evaluationResults = rootEvaluationContext.Results;
-        var pathsEvaluationContext = rootEvaluationContext.Evaluate("paths");
         operation = null;
 
-        var requestUri = message.RequestUri;
-        if (requestUri == null)
+        var requestUri = message.RequestUri ??
+                         throw new ArgumentNullException($"{nameof(message)}.{nameof(message.RequestUri)}");
+        if (!requestUri.IsAbsoluteUri)
         {
-            rootEvaluationContext.Results.Fail("Request URI is missing");
-            return false;
+            throw new ArgumentNullException($"{nameof(message)}.{nameof(message.RequestUri)}", "Request URI is not an absolute uri");
         }
 
-        var path = requestUri.AbsolutePath.Trim('/');
-        if (!path.StartsWith(_basePath))
-        {
-            rootEvaluationContext.Results.Fail($"Path '{path}' does not start with base path '{_basePath}'");
-            return false;
-        }
-
-        var relativePath = path[_basePath.Length..].Trim('/');
-        var requestedPathSegments = relativePath.Split('/');
-        var method = message.Method.Method.ToLowerInvariant();
-
-        pathsEvaluationContext.Results.AnyDetails();
-        OpenApiEvaluationContext? foundPathEvaluationContext = null;
-        RoutePattern? routePattern = null;
-        foreach (var pathEvaluationContext in pathsEvaluationContext.EvaluateChildren())
-        {
-            var pathTemplate = pathEvaluationContext.GetKey();
-            var apiPathSegments = pathTemplate.Split('/', StringSplitOptions.RemoveEmptyEntries);
-            if (apiPathSegments.Length != requestedPathSegments.Length)
-            {
-                pathEvaluationContext.Results.Fail(DoesNotMatchPathErrorMessage());
-                continue;
-            }
-
-            var match = true;
-            var routeValues = new Dictionary<string, string>();
-            for (var i = 0; i < apiPathSegments.Length; i++)
-            {
-                var segment = apiPathSegments[i];
-                var requestedSegment = requestedPathSegments[i];
-                if (segment.StartsWith('{') && segment.EndsWith('}'))
-                {
-                    routeValues.Add(segment.TrimStart('{').TrimEnd('}'), requestedSegment);
-                    continue;
-                }
-
-                if (segment.Equals(requestedSegment, StringComparison.InvariantCultureIgnoreCase))
-                    continue;
-
-                match = false;
-                break;
-            }
-
-            if (!match)
-            {
-                pathEvaluationContext.Results.Fail(DoesNotMatchPathErrorMessage());
-                continue;
-            }
-
-            foundPathEvaluationContext = pathEvaluationContext;
-            routePattern = new RoutePattern(pathTemplate, routeValues);
-
-            string DoesNotMatchPathErrorMessage() => $"'{relativePath}' does not match '{pathTemplate}'";
-        }
-
-        if (foundPathEvaluationContext == null)
-        {
-            return false;
-        }
-
-        OpenApiEvaluationContext? foundMethodEvaluationContext = null;
-        foundPathEvaluationContext.Results.AnyDetails();
-        foreach (var methodEvaluationContext in foundPathEvaluationContext.EvaluateChildren())
-        {
-            var evaluatedMethod = methodEvaluationContext.GetKey();
-            if (evaluatedMethod == method)
-            {
-                foundMethodEvaluationContext ??= methodEvaluationContext;
-                continue;
-            }
-            methodEvaluationContext.Results.Fail($"'{method}' does not match '{evaluatedMethod}'");
-        }
-
-        if (foundMethodEvaluationContext == null)
+        if (!Servers.GetEvaluator(rootEvaluationContext).TryMatch(requestUri, out var relativeUri))
             return false;
 
-        operation = new OpenApiOperation(
-            routePattern!,
-            foundMethodEvaluationContext);
+        if (!Paths.GetEvaluator(rootEvaluationContext).TryMatch(relativeUri, out var pathItemEvaluator))
+            return false;
+
+        if (!pathItemEvaluator.TryMatch(message.Method.Method, out var foundOperation))
+            return false;
+
+        operation = foundOperation;
         return true;
-
-
-        return false;
     }
-
+    
     public override string ToString() => 
         _baseDocument.BaseUri.ToString();
 

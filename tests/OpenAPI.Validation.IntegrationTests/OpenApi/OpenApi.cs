@@ -14,6 +14,6 @@ internal static class OpenApi
         yaml.Load(reader);
         var document = yaml.ToJsonNode().First() ??
                        throw new InvalidOperationException($"{pathRelativeToRoot} is not an open api document");
-        return new OpenApiDocument(document, baseUri);
+        return OpenApiDocument.Parse(document, baseUri);
     }
 }

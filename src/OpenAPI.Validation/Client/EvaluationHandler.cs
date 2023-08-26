@@ -37,7 +37,7 @@ public class EvaluationHandler : DelegatingHandler
             var requestUri = request.RequestUri ??
                              throw new ArgumentNullException($"{nameof(request)}.{nameof(request.RequestUri)}",
                                  "Request URI cannot be null");
-            if (!_openApiDocument.TryGetApiOperation2(
+            if (!_openApiDocument.TryGetApiOperation(
                     request, out operationEvaluator, out evaluationResults))
             {
                 return CreateEvaluationResponseMessage(new HttpResponseMessage(HttpStatusCode.BadRequest),
@@ -75,7 +75,7 @@ public class EvaluationHandler : DelegatingHandler
             return response;
 
         if ((operationEvaluator == null || evaluationResults == null) &&
-            !_openApiDocument.TryGetApiOperation2(
+            !_openApiDocument.TryGetApiOperation(
                 request, out operationEvaluator, out evaluationResults))
         {
             return CreateEvaluationResponseMessage(response, evaluationResults);
@@ -121,7 +121,7 @@ public class EvaluationHandler : DelegatingHandler
             var requestUri = request.RequestUri ??
                              throw new ArgumentNullException($"{nameof(request)}.{nameof(request.RequestUri)}",
                                  "Request URI cannot be null");
-            if (!_openApiDocument.TryGetApiOperation2(
+            if (!_openApiDocument.TryGetApiOperation(
                     request, out operationEvaluator, out evaluationResults))
             {
                 return CreateEvaluationResponseMessage(new HttpResponseMessage(HttpStatusCode.BadRequest),
@@ -161,7 +161,7 @@ public class EvaluationHandler : DelegatingHandler
             return response;
 
         if ((operationEvaluator == null || evaluationResults == null) &&
-            !_openApiDocument.TryGetApiOperation2(
+            !_openApiDocument.TryGetApiOperation(
                 request, out operationEvaluator, out evaluationResults))
         {
             return CreateEvaluationResponseMessage(response, evaluationResults);
