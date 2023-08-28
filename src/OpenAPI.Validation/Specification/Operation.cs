@@ -16,15 +16,17 @@ public sealed partial class Operation
         {
             RequestBody = RequestBody.Parse(requestBodyReader);
         }
-
         if (_reader.TryRead("parameters", out var parametersReader))
         {
             Parameters = Parameters.Parse(parametersReader, pathItemParameters);
         }
-
         if (_reader.TryRead("responses", out var responsesReader))
         {
             Responses = Responses.Parse(responsesReader);
+        }
+        if (_reader.TryRead("servers", out var serversReader))
+        {
+            Servers = Servers.Parse(serversReader);
         }
     }
 
@@ -33,6 +35,7 @@ public sealed partial class Operation
     public RequestBody? RequestBody { get; }
     public Parameters? Parameters { get; }
     public Responses? Responses { get; }
+    public Servers? Servers { get; }
 
     internal Evaluator GetEvaluator(OpenApiEvaluationContext openApiEvaluationContext, RoutePattern routePattern) =>
         new(openApiEvaluationContext.Evaluate(_reader), this, routePattern);

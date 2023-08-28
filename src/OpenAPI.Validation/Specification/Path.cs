@@ -29,7 +29,11 @@ public sealed partial class Path
         {
             Parameters = Parameters.Parse(parametersReader);
         }
-        
+        if (_reader.TryRead("servers", out var serversReader))
+        {
+            Servers = Servers.Parse(serversReader);
+        }
+
         Get = ReadOperation("get");
         Put = ReadOperation("put");
         Post = ReadOperation("post");
@@ -68,6 +72,7 @@ public sealed partial class Path
     private readonly Dictionary<string, Operation> _operations = new();
     public IReadOnlyDictionary<string, Operation> Operations => _operations.AsReadOnly();
     public Parameters? Parameters { get; }
+    public Servers? Servers { get; }
 
     internal Evaluator GetEvaluator(OpenApiEvaluationContext openApiEvaluationContext, RoutePattern routePattern)
     {
