@@ -4,6 +4,7 @@ info:
   title: Test API
 servers:
   - url: http://localhost/v1
+    description: "v1"
 security:
   - bearerAuth: []
 paths:

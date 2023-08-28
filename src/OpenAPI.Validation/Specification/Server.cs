@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Nodes;
 using UriExtensions = OpenAPI.Validation.Http.UriExtensions;
 
 namespace OpenAPI.Validation.Specification;
@@ -6,6 +7,7 @@ namespace OpenAPI.Validation.Specification;
 public partial class Server
 {
     private readonly JsonNodeReader _reader;
+    private readonly Dictionary<string, JsonNode?> _annotations = new();
 
     private Server(JsonNodeReader reader)
     {
@@ -19,17 +21,22 @@ public partial class Server
         if (_reader.TryRead("description", out var descriptionReader))
         {
             Description = descriptionReader.GetValue<string>();
+            var (name, value) = descriptionReader.GetProperty();
+            _annotations.Add(name, value);
         }
     }
-    
-    internal static Server Parse(JsonNodeReader reader) => new(reader);
 
+    internal static Server Parse(JsonNodeReader reader) => new(reader);
+    
     public Uri Url { get; }
     public string? Description { get; }
-
+    
     internal Evaluator GetEvaluator(OpenApiEvaluationContext openApiEvaluationContext)
     {
-        return new Evaluator(openApiEvaluationContext.Evaluate(_reader), this);
+        var context = openApiEvaluationContext.Evaluate(_reader);
+        if (_annotations.Any())
+            context.Results.SetAnnotations(_annotations);
+        return new Evaluator(context, this);
     }
 
     internal sealed class Evaluator

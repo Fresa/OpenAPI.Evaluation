@@ -69,9 +69,12 @@ public class OpenApiEvaluationResults
     public IReadOnlyDictionary<string, JsonNode?>? Annotations => _annotations?.AsReadOnly();
     internal bool PreserveDroppedAnnotations { get; }
 
-    internal void SetAnnotation(string name, JsonNode? value)
+    internal void SetAnnotations(IReadOnlyDictionary<string, JsonNode?> annotations)
     {
         _annotations ??= new Dictionary<string, JsonNode?>();
-        _annotations[name] = value;
+        foreach (var annotation in annotations)
+        {
+            _annotations[annotation.Key] = annotation.Value;
+        }
     }
 }

@@ -82,6 +82,7 @@ internal sealed class JsonNodeReader
 
 
     internal T GetValue<T>() => _root.GetValue<T>();
+    internal (string Name, JsonNode? Value) GetProperty() => new(Key, _root);
 
     internal IEnumerable<JsonNodeReader> ReadChildren()
     {
