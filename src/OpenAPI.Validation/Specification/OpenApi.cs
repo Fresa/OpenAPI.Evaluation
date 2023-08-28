@@ -2,11 +2,10 @@ using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Nodes;
 using Json.Pointer;
 using Json.Schema;
-using OpenAPI.Validation.Specification;
 
-namespace OpenAPI.Validation;
+namespace OpenAPI.Validation.Specification;
 
-public sealed class OpenApiDocument
+public sealed class OpenApi
 {
     private readonly SemVer _from = "3.1.0";
     // OAS does not follow semver semantics strictly, so we follow the latest minor version
@@ -22,7 +21,7 @@ public sealed class OpenApiDocument
     private readonly string _basePath;
     private readonly JsonNodeReader _document;
 
-    private OpenApiDocument(JsonNode document, Uri? baseUri = null)
+    private OpenApi(JsonNode document, Uri? baseUri = null)
     {
         if (baseUri != null && !baseUri.IsAbsoluteUri)
             throw new ArgumentException("Base uri must be an absolute URI", nameof(baseUri));
@@ -60,7 +59,7 @@ public sealed class OpenApiDocument
             throw new InvalidOperationException($"OpenAPI version {versionString} is not supported. Supported versions are [{_from}, {_to})");
     }
 
-    public static OpenApiDocument Parse(JsonNode document, Uri? baseUri = null) => new(document, baseUri);
+    public static OpenApi Parse(JsonNode document, Uri? baseUri = null) => new(document, baseUri);
 
     public Servers Servers { get; }
 

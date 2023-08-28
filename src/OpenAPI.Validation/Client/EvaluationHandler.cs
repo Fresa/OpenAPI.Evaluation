@@ -7,15 +7,15 @@ namespace OpenAPI.Validation.Client;
 
 public class EvaluationHandler : DelegatingHandler
 {
-    private readonly OpenApiDocument _openApiDocument;
+    private readonly OpenApi _openApi;
     private readonly ValidatingOptions _options;
 
     public EvaluationHandler(
-        OpenApiDocument openApiDocument,
+        OpenApi openApi,
         ValidatingOptions options,
         HttpMessageHandler inner) : base(inner)
     {
-        _openApiDocument = openApiDocument;
+        _openApi = openApi;
         _options = options;
     }
 
@@ -37,7 +37,7 @@ public class EvaluationHandler : DelegatingHandler
             var requestUri = request.RequestUri ??
                              throw new ArgumentNullException($"{nameof(request)}.{nameof(request.RequestUri)}",
                                  "Request URI cannot be null");
-            if (!_openApiDocument.TryGetApiOperation(
+            if (!_openApi.TryGetApiOperation(
                     request, out operationEvaluator, out evaluationResults))
             {
                 return CreateEvaluationResponseMessage(new HttpResponseMessage(HttpStatusCode.BadRequest),
@@ -75,7 +75,7 @@ public class EvaluationHandler : DelegatingHandler
             return response;
 
         if ((operationEvaluator == null || evaluationResults == null) &&
-            !_openApiDocument.TryGetApiOperation(
+            !_openApi.TryGetApiOperation(
                 request, out operationEvaluator, out evaluationResults))
         {
             return CreateEvaluationResponseMessage(response, evaluationResults);
@@ -121,7 +121,7 @@ public class EvaluationHandler : DelegatingHandler
             var requestUri = request.RequestUri ??
                              throw new ArgumentNullException($"{nameof(request)}.{nameof(request.RequestUri)}",
                                  "Request URI cannot be null");
-            if (!_openApiDocument.TryGetApiOperation(
+            if (!_openApi.TryGetApiOperation(
                     request, out operationEvaluator, out evaluationResults))
             {
                 return CreateEvaluationResponseMessage(new HttpResponseMessage(HttpStatusCode.BadRequest),
@@ -161,7 +161,7 @@ public class EvaluationHandler : DelegatingHandler
             return response;
 
         if ((operationEvaluator == null || evaluationResults == null) &&
-            !_openApiDocument.TryGetApiOperation(
+            !_openApi.TryGetApiOperation(
                 request, out operationEvaluator, out evaluationResults))
         {
             return CreateEvaluationResponseMessage(response, evaluationResults);

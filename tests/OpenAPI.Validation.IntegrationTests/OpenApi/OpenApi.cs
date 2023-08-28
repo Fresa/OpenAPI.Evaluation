@@ -1,11 +1,13 @@
+using OpenAPI.Validation.Specification;
 using Yaml2JsonNode;
 using YamlDotNet.RepresentationModel;
+using Path = System.IO.Path;
 
 namespace OpenAPI.Validation.IntegrationTests.OpenApi;
 
 internal static class OpenApi
 {
-    public static OpenApiDocument Load(string pathRelativeToRoot, Uri baseUri)
+    public static Specification.OpenApi Load(string pathRelativeToRoot, Uri baseUri)
     {
         if (!pathRelativeToRoot.EndsWith(".yaml", StringComparison.InvariantCultureIgnoreCase))
             throw new ArgumentException("Only yaml files are supported", pathRelativeToRoot);
@@ -14,6 +16,6 @@ internal static class OpenApi
         yaml.Load(reader);
         var document = yaml.ToJsonNode().First() ??
                        throw new InvalidOperationException($"{pathRelativeToRoot} is not an open api document");
-        return OpenApiDocument.Parse(document, baseUri);
+        return Specification.OpenApi.Parse(document, baseUri);
     }
 }

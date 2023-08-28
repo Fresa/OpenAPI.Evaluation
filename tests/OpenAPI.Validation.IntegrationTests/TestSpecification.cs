@@ -1,5 +1,6 @@
 using OpenAPI.Validation.Client;
 using OpenAPI.Validation.IntegrationTests.Http;
+using OpenAPI.Validation.Specification;
 using Xunit.Abstractions;
 
 namespace OpenAPI.Validation.IntegrationTests;
@@ -28,10 +29,10 @@ public abstract class TestSpecification : IAsyncLifetime
 
     internal HttpServer Server { get; }
 
-    protected OpenApiDocument LoadOpenApiDocument(string pathRelativeToRoot)
+    protected Specification.OpenApi LoadOpenApiDocument(string pathRelativeToRoot)
         => OpenApi.OpenApi.Load(pathRelativeToRoot, _baseUri);
 
-    protected HttpClient CreateResponseValidatingClient(OpenApiDocument document) =>
+    protected HttpClient CreateResponseValidatingClient(Specification.OpenApi document) =>
         new(new OpenApiEvaluationResultWritingHandler(_testOutputHelper,
             new EvaluationHandler(document,
                 new ValidatingOptions
