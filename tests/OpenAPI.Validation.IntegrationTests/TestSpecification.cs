@@ -29,10 +29,10 @@ public abstract class TestSpecification : IAsyncLifetime
 
     internal HttpServer Server { get; }
 
-    protected Specification.OpenApi LoadOpenApiDocument(string pathRelativeToRoot)
+    protected Specification.OpenAPI LoadOpenApiDocument(string pathRelativeToRoot)
         => OpenApi.OpenApi.Load(pathRelativeToRoot, _baseUri);
 
-    protected HttpClient CreateResponseValidatingClient(Specification.OpenApi document) =>
+    protected HttpClient CreateResponseValidatingClient(Specification.OpenAPI document) =>
         new(new OpenApiEvaluationResultWritingHandler(_testOutputHelper,
             new EvaluationHandler(document,
                 new ValidatingOptions

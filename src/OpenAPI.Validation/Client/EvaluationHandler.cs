@@ -7,11 +7,11 @@ namespace OpenAPI.Validation.Client;
 
 public class EvaluationHandler : DelegatingHandler
 {
-    private readonly OpenApi _openApi;
+    private readonly Specification.OpenAPI _openApi;
     private readonly ValidatingOptions _options;
 
     public EvaluationHandler(
-        OpenApi openApi,
+        Specification.OpenAPI openApi,
         ValidatingOptions options,
         HttpMessageHandler inner) : base(inner)
     {

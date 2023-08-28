@@ -5,7 +5,7 @@ using Json.Schema;
 
 namespace OpenAPI.Validation.Specification;
 
-public sealed class OpenApi
+public sealed class OpenAPI
 {
     private readonly SemVer _from = "3.1.0";
     // OAS does not follow semver semantics strictly, so we follow the latest minor version
@@ -19,16 +19,17 @@ public sealed class OpenApi
         EvaluateAs = SpecVersion.Draft202012
     };
     private readonly string _basePath;
-    private readonly JsonNodeReader _document;
+    private readonly JsonNodeReader _reader;
 
-    private OpenApi(JsonNode document, Uri? baseUri = null)
+    private OpenAPI(JsonNode document, Uri? baseUri = null)
     {
         if (baseUri != null && !baseUri.IsAbsoluteUri)
             throw new ArgumentException("Base uri must be an absolute URI", nameof(baseUri));
 
-        _document = new JsonNodeReader(document, JsonPointer.Empty);
-        EnsureSupportedOpenApiVersion(_document);
-        var serverUri = GetServerUri(_document);
+        _reader = new JsonNodeReader(document, JsonPointer.Empty);
+        OpenApi = _reader.Read("openapi").GetValue<string>();
+        EnsureSupportedOpenApiVersion(_reader);
+        var serverUri = GetServerUri(_reader);
 
         baseUri ??= serverUri;
         if (!baseUri.IsAbsoluteUri)
@@ -39,8 +40,8 @@ public sealed class OpenApi
         Json.Schema.OpenApi.Vocabularies.Register(_evaluationOptions.VocabularyRegistry, _evaluationOptions.SchemaRegistry);
         _evaluationOptions.SchemaRegistry.Register(_baseDocument);
 
-        Servers = Servers.Parse(_document.Read("servers"));
-        Paths = Paths.Parse(_document.Read("paths"));
+        Servers = Servers.Parse(_reader.Read("servers"));
+        Paths = Paths.Parse(_reader.Read("paths"));
     }
     
     private static Uri GetServerUri(JsonNodeReader reader)
@@ -52,15 +53,15 @@ public sealed class OpenApi
 
     private void EnsureSupportedOpenApiVersion(JsonNodeReader reader)
     {
-        var versionString = reader.Read("openapi").GetValue<string>();
-        SemVer version = versionString;
+        SemVer version = OpenApi;
         if (version < _from ||
             version >= _to)
-            throw new InvalidOperationException($"OpenAPI version {versionString} is not supported. Supported versions are [{_from}, {_to})");
+            throw new InvalidOperationException($"OpenAPI version {OpenApi} is not supported. Supported versions are [{_from}, {_to})");
     }
 
-    public static OpenApi Parse(JsonNode document, Uri? baseUri = null) => new(document, baseUri);
+    public static OpenAPI Parse(JsonNode document, Uri? baseUri = null) => new(document, baseUri);
 
+    public string OpenApi { get; }
     public Servers Servers { get; }
 
     public Paths Paths { get; }
@@ -68,7 +69,7 @@ public sealed class OpenApi
     public bool TryGetApiOperation(HttpRequestMessage message, [NotNullWhen(true)] out Operation.Evaluator? operation,
         out OpenApiEvaluationResults evaluationResults)
     {
-        var rootEvaluationContext = new OpenApiEvaluationContext(_baseDocument, _document, _evaluationOptions);
+        var rootEvaluationContext = new OpenApiEvaluationContext(_baseDocument, _reader, _evaluationOptions);
         evaluationResults = rootEvaluationContext.Results;
         operation = null;
 
@@ -94,63 +95,4 @@ public sealed class OpenApi
     
     public override string ToString() => 
         _baseDocument.BaseUri.ToString();
-
-    private readonly struct SemVer
-    {
-        private int Major { get; init; }
-        private int Minor { get; init; }
-        private int Patch { get; init; }
-
-        public static implicit operator SemVer(string semverString)
-        {
-            var parts = semverString.Split('.');
-            if (parts.Length != 3)
-                throw new ArgumentException($"{semverString} does not consist of three parts", nameof(semverString));
-            if (!int.TryParse(parts[0], out var major))
-                throw new ArgumentException($"The major part of {semverString} is not a valid integer", nameof(semverString));
-            if (!int.TryParse(parts[1], out var minor))
-                throw new ArgumentException($"The minor part of {semverString} is not a valid integer", nameof(semverString));
-            if (!int.TryParse(parts[2], out var patch))
-                throw new ArgumentException($"The patch part of {semverString} is not a valid integer", nameof(semverString));
-            return new SemVer
-            {
-                Major = major,
-                Minor = minor,
-                Patch = patch
-            };
-        }
-
-        public override string ToString() =>
-            $"{Major}.{Minor}.{Patch}";
-
-        public static bool operator ==(SemVer current, SemVer other) =>
-            current.Equals(other);
-        public static bool operator !=(SemVer current, SemVer other) =>
-            !current.Equals(other);
-        public static bool operator >(SemVer current, SemVer other)
-        {
-            if (current.Major > other.Major)
-                return true;
-            if (current.Major < other.Major)
-                return false;
-            if (current.Minor > other.Minor)
-                return true;
-            if (current.Minor < other.Minor)
-                return false;
-            return current.Patch > other.Patch;
-        }
-        public static bool operator >=(SemVer current, SemVer other) =>
-            current > other ||
-            current == other;
-        public static bool operator <(SemVer current, SemVer other) =>
-            !(current >= other);
-        public static bool operator <=(SemVer current, SemVer other) =>
-            current < other ||
-            current == other;
-        public override int GetHashCode() =>
-            HashCode.Combine(Major, Minor, Patch);
-        public override bool Equals(object? obj) =>
-            obj is SemVer other &&
-            GetHashCode() == other.GetHashCode();
-    }
 }
