@@ -1,4 +1,3 @@
-using OpenAPI.Validation.Specification;
 using Yaml2JsonNode;
 using YamlDotNet.RepresentationModel;
 using Path = System.IO.Path;

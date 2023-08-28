@@ -1,5 +1,4 @@
 using System.Collections;
-using System.Net.Http;
 using System.Net;
 using System.Net.Http.Headers;
 
@@ -10,22 +9,35 @@ public sealed partial class Parameters : IEnumerable<Parameter>
     private readonly JsonNodeReader _reader;
     private readonly IEnumerable<Parameter> _parameters;
 
-    private Parameters(JsonNodeReader reader)
+    private Parameters(JsonNodeReader reader, Parameters? baseParameters = null)
     {
         _reader = reader;
-        _parameters = ReadParameters();
+        var parameters = ReadParameters();
+        if (baseParameters != null)
+        {
+            foreach (var baseParameter in baseParameters)
+            {
+                if (!parameters.Exists(readParameter =>
+                        readParameter.In == baseParameter.In &&
+                        readParameter.Name == baseParameter.Name))
+                {
+                    parameters.Add(baseParameter);
+                }
+            }
+        }
+        _parameters = parameters;
     }
 
-    private IEnumerable<Parameter> ReadParameters()
+    private List<Parameter> ReadParameters()
     {
         var readParameters = new List<Parameter>();
         foreach (var parameterReader in _reader.ReadChildren())
         {
-            if (!Parameter.TryParse(parameterReader, out var parameter)) 
+            if (!Parameter.TryParse(parameterReader, out var parameter))
                 continue;
             if (readParameters.Exists(readParameter =>
-                    GetUniqueKey(readParameter)
-                        .Equals(GetUniqueKey(parameter), StringComparison.CurrentCultureIgnoreCase)))
+                    readParameter.In == parameter.In &&
+                    readParameter.Name == parameter.Name))
             {
                 throw new InvalidOperationException(
                     $"Parameter with name {parameter.Name} and location {parameter.In} can only appear once");
@@ -35,11 +47,9 @@ public sealed partial class Parameters : IEnumerable<Parameter>
         }
 
         return readParameters;
-
-        static string GetUniqueKey(Parameter parameter) => $"{parameter.In}:{parameter.Name}";
     }
-    
-    internal static Parameters Parse(JsonNodeReader reader) => new(reader);
+
+    internal static Parameters Parse(JsonNodeReader reader, Parameters? baseParameters = null) => new(reader, baseParameters);
 
     public IEnumerator<Parameter> GetEnumerator() => _parameters.GetEnumerator();
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();

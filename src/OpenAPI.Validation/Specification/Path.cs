@@ -25,6 +25,11 @@ public sealed partial class Path
             _annotations.Add(name, value);
         }
 
+        if (_reader.TryRead("parameters", out var parametersReader))
+        {
+            Parameters = Parameters.Parse(parametersReader);
+        }
+        
         Get = ReadOperation("get");
         Put = ReadOperation("put");
         Post = ReadOperation("post");
@@ -39,12 +44,11 @@ public sealed partial class Path
             if (!reader.TryRead(name, out var operationReader)) 
                 return null;
 
-            var operation = Operation.Parse(operationReader);
+            var operation = Operation.Parse(operationReader, Parameters);
             _operations.Add(name, operation);
             return operation;
         }
     }
-
     
     internal static Path Parse(JsonNodeReader reader)
     {
@@ -63,6 +67,7 @@ public sealed partial class Path
 
     private readonly Dictionary<string, Operation> _operations = new();
     public IReadOnlyDictionary<string, Operation> Operations => _operations.AsReadOnly();
+    public Parameters? Parameters { get; }
 
     internal Evaluator GetEvaluator(OpenApiEvaluationContext openApiEvaluationContext, RoutePattern routePattern)
     {

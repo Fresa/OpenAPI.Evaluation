@@ -1,6 +1,5 @@
 using OpenAPI.Validation.Client;
 using OpenAPI.Validation.IntegrationTests.Http;
-using OpenAPI.Validation.Specification;
 using Xunit.Abstractions;
 
 namespace OpenAPI.Validation.IntegrationTests;

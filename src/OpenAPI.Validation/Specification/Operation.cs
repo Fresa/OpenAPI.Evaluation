@@ -8,7 +8,7 @@ public sealed partial class Operation
 {
     private readonly JsonNodeReader _reader;
 
-    private Operation(JsonNodeReader reader)
+    private Operation(JsonNodeReader reader, Parameters? pathItemParameters)
     {
         _reader = reader;
 
@@ -19,7 +19,7 @@ public sealed partial class Operation
 
         if (_reader.TryRead("parameters", out var parametersReader))
         {
-            Parameters = Parameters.Parse(parametersReader);
+            Parameters = Parameters.Parse(parametersReader, pathItemParameters);
         }
 
         if (_reader.TryRead("responses", out var responsesReader))
@@ -28,7 +28,7 @@ public sealed partial class Operation
         }
     }
 
-    internal static Operation Parse(JsonNodeReader reader) => new(reader);
+    internal static Operation Parse(JsonNodeReader reader, Parameters? pathItemParameters) => new(reader, pathItemParameters);
 
     public RequestBody? RequestBody { get; }
     public Parameters? Parameters { get; }
