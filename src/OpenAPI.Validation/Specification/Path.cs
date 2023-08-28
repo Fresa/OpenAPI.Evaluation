@@ -1,14 +1,29 @@
 using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Nodes;
 
 namespace OpenAPI.Validation.Specification;
 
 public sealed partial class Path
 {
-    internal JsonNodeReader Reader { get; }
+    private readonly JsonNodeReader _reader;
+    private readonly Dictionary<string, JsonNode?> _annotations = new();
 
     private Path(JsonNodeReader reader)
     {
-        Reader = reader;
+        _reader = reader;
+
+        if (_reader.TryRead("summary", out var summaryReader))
+        {
+            Summary = summaryReader.GetValue<string>();
+            var (name, value) = summaryReader.GetProperty();
+            _annotations.Add(name, value);
+        }
+        if (_reader.TryRead("description", out var descriptionReader))
+        {
+            Description = descriptionReader.GetValue<string>();
+            var (name, value) = descriptionReader.GetProperty();
+            _annotations.Add(name, value);
+        }
 
         Get = ReadOperation("get");
         Put = ReadOperation("put");
@@ -29,12 +44,14 @@ public sealed partial class Path
             return operation;
         }
     }
+
     
     internal static Path Parse(JsonNodeReader reader)
     {
         return new Path(reader);
     }
-    
+    public string? Summary { get; }
+    public string? Description { get; set; }
     public Operation? Get { get; private init; }
     public Operation? Put { get; internal init; }
     public Operation? Post { get; private init; }
@@ -49,7 +66,10 @@ public sealed partial class Path
 
     internal Evaluator GetEvaluator(OpenApiEvaluationContext openApiEvaluationContext, RoutePattern routePattern)
     {
-        return new Evaluator(openApiEvaluationContext.Evaluate(Reader), this, routePattern);
+        var context = openApiEvaluationContext.Evaluate(_reader);
+        if (_annotations.Any())
+            context.Results.SetAnnotations(_annotations);
+        return new Evaluator(context, this, routePattern);
     }
 
     internal sealed class Evaluator
