@@ -31,11 +31,17 @@ paths:
           $ref: "#/components/responses/bad-request"
       tags:
         - test
+  /v2/user:
     post:
       summary: Create a user
       operationId: postUser
       parameters:
         - $ref: "#/components/parameters/user-id"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/user"
       responses:
         "200":
           description: Ok
@@ -48,11 +54,12 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/user"
+                $ref: "#/components/schemas/user-id"
         "400":
           $ref: "#/components/responses/bad-request"
-      tags:
-        - test
+      servers:
+        - url: http://localhost/
+          description: "localhost"
 components:
   schemas:
     open-api-evaluation-results:

@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using OpenAPI.Validation.Http;
 
 namespace OpenAPI.Validation.Specification;
@@ -12,7 +13,7 @@ public sealed partial class Paths
         _reader = reader;
 
         _pathItems = _reader.ReadChildren()
-            .ToDictionary(nodeReader => nodeReader.Key, Path.Parse);
+            .ToDictionary(nodeReader => nodeReader.Key, nodeReader => Path.Parse(nodeReader));
     }
 
     internal static Paths Parse(JsonNodeReader reader)
@@ -36,32 +37,39 @@ public sealed partial class Paths
             _openApiEvaluationContext = openApiEvaluationContext;
             _paths = paths;
         }
-
+        
         internal bool TryMatch(Uri uri, 
-            [NotNullWhen(true)] out Path.Evaluator? pathItemEvaluator)
+            [NotNullWhen(true)] out Path.Evaluator? pathItemEvaluator,
+            [NotNullWhen(true)] out Uri? serverUri)
         {
-            pathItemEvaluator = null;
-            if (uri.IsAbsoluteUri)
+            if (!uri.IsAbsoluteUri)
             {
-                _openApiEvaluationContext.Results.Fail($"{uri} must be a path relative to the server");
-                return false;
+                throw new ArgumentException($"{uri} must be an absolute uri");
             }
 
-            var requestedPathSegments = uri.GetPathSegments();
+            var requestedPathSegments = uri
+                .GetPathSegments();
+            var reversedRequestedPathSegments = requestedPathSegments
+                .Reverse()
+                .ToList();
             foreach (var (pathTemplate, pathItem) in _paths.PathItems)
             {
-                var apiPathSegments = pathTemplate.Split('/', StringSplitOptions.RemoveEmptyEntries);
-                if (apiPathSegments.Length != requestedPathSegments.Length)
+                var reversedApiPathSegments =
+                    pathTemplate
+                        .Split('/', StringSplitOptions.RemoveEmptyEntries)
+                        .Reverse()
+                        .ToList();
+                if (reversedApiPathSegments.Count > reversedRequestedPathSegments.Count)
                 {
                     continue;
                 }
 
                 var match = true;
                 var routeValues = new Dictionary<string, string>();
-                for (var i = 0; i < apiPathSegments.Length; i++)
+                for (var i = 0; i < reversedApiPathSegments.Count; i++)
                 {
-                    var segment = apiPathSegments[i];
-                    var requestedSegment = requestedPathSegments[i];
+                    var segment = reversedApiPathSegments[i];
+                    var requestedSegment = reversedRequestedPathSegments[i];
                     if (segment.StartsWith('{') && segment.EndsWith('}'))
                     {
                         routeValues.Add(segment.TrimStart('{').TrimEnd('}'), requestedSegment);
@@ -82,11 +90,18 @@ public sealed partial class Paths
 
                 var routePattern = new RoutePattern(pathTemplate, routeValues);
                 pathItemEvaluator = pathItem.GetEvaluator(_openApiEvaluationContext, routePattern);
+                serverUri = new UriBuilder(uri)
+                {
+                    Path = string.Join('/', requestedPathSegments.Take(reversedRequestedPathSegments.Count - 
+                                                                       reversedApiPathSegments.Count))
+                }.Uri;
                 return true;
             }
             
             _openApiEvaluationContext.Results.Fail($"'{string.Join('/', requestedPathSegments)}' does not match any of the paths: {string.Join(", ", _paths.PathItems.Keys)}");
-            return pathItemEvaluator != null;
+            pathItemEvaluator = null;
+            serverUri = null;
+            return false;
         }
     }
 }

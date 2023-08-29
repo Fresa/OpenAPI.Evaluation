@@ -50,15 +50,10 @@ public sealed partial class Servers
             _servers = servers;
         }
 
-        internal bool TryMatch(Uri uri, [NotNullWhen(true)] out Uri? relativeUri)
-        {
-            relativeUri = null;
-            var match = false;
-            foreach (var serverObject in _servers.ServerObjects)
-            {
-                match |= serverObject.GetEvaluator(_openApiEvaluationContext).TryMatch(uri, out relativeUri);
-            }
-            return match;
-        }
+        internal bool TryMatch(Uri uri) => 
+            _servers.ServerObjects
+                .Any(serverObject => serverObject
+                    .GetEvaluator(_openApiEvaluationContext)
+                    .TryMatch(uri));
     }
 }

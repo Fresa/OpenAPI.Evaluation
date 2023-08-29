@@ -109,5 +109,17 @@ public sealed partial class Operation
             responseEvaluator = null;
             return false;
         }
+
+        internal bool TryGetServers([NotNullWhen(true)] out Servers.Evaluator? serversEvaluator)
+        {
+            if (_operation.Servers == null)
+            {
+                serversEvaluator = null;
+                return false;
+            }
+
+            serversEvaluator = _operation.Servers.GetEvaluator(_openApiEvaluationContext);
+            return true;
+        }
     }
 }

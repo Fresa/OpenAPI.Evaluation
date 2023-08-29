@@ -14,7 +14,10 @@ internal sealed class HttpServer : HttpMessageHandler
         _baseUri = baseUri;
     }
 
-    internal HttpServer AddHandler(Uri uri, HttpMethod method, Func<HttpResponseMessage> createResponse)
+    private static HttpContent CreateJsonContent(string json) => 
+        new StringContent(json, Encoding.UTF8, "application/json");
+
+    private HttpServer AddHandler(Uri uri, HttpMethod method, Func<HttpResponseMessage> createResponse)
     {
         _handlers.Add((
                 uri.IsAbsoluteUri ? uri : new Uri(_baseUri, uri),
@@ -23,13 +26,21 @@ internal sealed class HttpServer : HttpMessageHandler
         return this;
     }
 
-    internal HttpServer AddGetHandler(Uri uri, Func<HttpResponseMessage> createResponse) => 
+    private HttpServer AddGetHandler(Uri uri, Func<HttpResponseMessage> createResponse) => 
         AddHandler(uri, HttpMethod.Get, createResponse);
+
+    private HttpServer AddPostHandler(Uri uri, Func<HttpResponseMessage> createResponse) =>
+        AddHandler(uri, HttpMethod.Post, createResponse);
 
     internal HttpServer AddGetResponse(Uri uri, string json) =>
         AddGetHandler(uri, () => new HttpResponseMessage(HttpStatusCode.OK)
         {
-            Content = new StringContent(json, Encoding.UTF8, "application/json")
+            Content = CreateJsonContent(json)
+        });
+    internal HttpServer AddPostResponse(Uri uri, string json) =>
+        AddPostHandler(uri, () => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = CreateJsonContent(json)
         });
 
     protected override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken) => 

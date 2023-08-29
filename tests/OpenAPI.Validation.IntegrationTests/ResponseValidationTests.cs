@@ -1,4 +1,6 @@
 using System.Net;
+using System.Net.Http.Headers;
+using System.Text;
 using FluentAssertions;
 using Xunit.Abstractions;
 
@@ -42,6 +44,25 @@ public class ResponseValidationTests : TestSpecification
         var document = LoadOpenApiDocument("test-api.yaml");
         using var client = CreateResponseValidatingClient(document);
         var response = client.Send(new HttpRequestMessage(HttpMethod.Get, uri));
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    [Fact]
+    public async Task Given_no_user_when_creating_it_the_response_should_be_valid()
+    {
+        var uri = new Uri("v2/user", UriKind.Relative);
+        Server.AddPostResponse(uri,
+            "\"133ebc64-e89b-1ad3-a456-42661aa74110\"");
+        var requestBody = """
+                {
+                    "first-name": "Foo",
+                    "last-name": "Bar"
+                }
+                """;
+        var document = LoadOpenApiDocument("test-api.yaml");
+        using var client = CreateResponseValidatingClient(document);
+        var response = await client.PostAsync(uri, new StringContent(requestBody, Encoding.UTF8, MediaTypeHeaderValue.Parse("application/json")), Timeout)
+            .ConfigureAwait(false);
         response.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 }

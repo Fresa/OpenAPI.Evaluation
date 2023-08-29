@@ -18,7 +18,6 @@ public sealed class OpenAPI
         OutputFormat = OutputFormat.Hierarchical,
         EvaluateAs = SpecVersion.Draft202012
     };
-    private readonly string _basePath;
     private readonly JsonNodeReader _reader;
 
     private OpenAPI(JsonNode document, Uri? baseUri = null)
@@ -35,7 +34,6 @@ public sealed class OpenAPI
         if (!baseUri.IsAbsoluteUri)
             throw new ArgumentException("The servers url property in the specification must have an absolute URI when base uri is not explicitly provided", nameof(baseUri));
 
-        _basePath = serverUri.AbsolutePath.Trim('/');
         _baseDocument = new JsonNodeBaseDocument(document, baseUri);
         Json.Schema.OpenApi.Vocabularies.Register(_evaluationOptions.VocabularyRegistry, _evaluationOptions.SchemaRegistry);
         _evaluationOptions.SchemaRegistry.Register(_baseDocument);
@@ -63,7 +61,6 @@ public sealed class OpenAPI
 
     public string OpenApi { get; }
     public Servers Servers { get; }
-
     public Paths Paths { get; }
 
     public bool TryGetApiOperation(HttpRequestMessage message, [NotNullWhen(true)] out Operation.Evaluator? operation,
@@ -79,14 +76,23 @@ public sealed class OpenAPI
         {
             throw new ArgumentNullException($"{nameof(message)}.{nameof(message.RequestUri)}", "Request URI is not an absolute uri");
         }
-
-        if (!Servers.GetEvaluator(rootEvaluationContext).TryMatch(requestUri, out var relativeUri))
-            return false;
-
-        if (!Paths.GetEvaluator(rootEvaluationContext).TryMatch(relativeUri, out var pathItemEvaluator))
+        
+        if (!Paths.GetEvaluator(rootEvaluationContext).TryMatch(requestUri, 
+                out var pathItemEvaluator, 
+                out var serverUri))
             return false;
 
         if (!pathItemEvaluator.TryMatch(message.Method.Method, out var foundOperation))
+            return false;
+
+        if (!foundOperation.TryGetServers(out var serversEvaluator))
+        {
+            if (!pathItemEvaluator.TryGetServers(out serversEvaluator))
+            {
+                serversEvaluator = Servers.GetEvaluator(rootEvaluationContext);
+            }
+        }
+        if (!serversEvaluator.TryMatch(serverUri))
             return false;
 
         operation = foundOperation;

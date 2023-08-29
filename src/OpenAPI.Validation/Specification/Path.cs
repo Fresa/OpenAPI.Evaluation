@@ -54,10 +54,7 @@ public sealed partial class Path
         }
     }
     
-    internal static Path Parse(JsonNodeReader reader)
-    {
-        return new Path(reader);
-    }
+    internal static Path Parse(JsonNodeReader reader) => new Path(reader);
     public string? Summary { get; }
     public string? Description { get; set; }
     public Operation? Get { get; private init; }
@@ -109,6 +106,18 @@ public sealed partial class Path
             _openApiEvaluationContext.Results.Fail($"'{method}' does not match any of the operations '{string.Join(", ", _pathItem.Operations.Keys)}'");
             operationEvaluator = null;
             return false;
+        }
+
+        public bool TryGetServers([NotNullWhen(true)] out Servers.Evaluator? serversEvaluator)
+        {
+            if (_pathItem.Servers == null)
+            {
+                serversEvaluator = null;
+                return false;
+            }
+
+            serversEvaluator = _pathItem.Servers.GetEvaluator(_openApiEvaluationContext);
+            return true;
         }
     }
 }

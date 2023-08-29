@@ -1,6 +1,5 @@
-using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Nodes;
-using UriExtensions = OpenAPI.Validation.Http.UriExtensions;
+using OpenAPI.Validation.Http;
 
 namespace OpenAPI.Validation.Specification;
 
@@ -16,7 +15,7 @@ public partial class Server
         var url = _reader.Read("url").GetValue<string>().Trim();
         if (!url.EndsWith('/'))
             url += "/";
-        Url = new Uri(url);
+        Url = new Uri(url, UriKind.RelativeOrAbsolute);
 
         if (_reader.TryRead("description", out var descriptionReader))
         {
@@ -50,10 +49,8 @@ public partial class Server
             _server = server;
         }
 
-        internal bool TryMatch(Uri uri, [NotNullWhen(true)] out Uri? relativeUri)
+        internal bool TryMatch(Uri uri)
         {
-            relativeUri = null;
-            
             if (_server.Url.IsAbsoluteUri)
             {
                 if (!uri.IsAbsoluteUri)
@@ -62,11 +59,11 @@ public partial class Server
                     return false;
                 }
 
-                relativeUri = _server.Url.MakeRelativeUri(uri);
-                if (relativeUri != uri) 
+                var serverParts = _server.Url.GetLeftPart(UriPartial.Path).TrimEnd('/');
+                var uriParts = uri.GetLeftPart(UriPartial.Path).TrimEnd('/');
+                if (serverParts == uriParts)
                     return true;
                 
-                relativeUri = null;
                 DoesNotMatch();
                 return false;
             }
@@ -77,28 +74,18 @@ public partial class Server
                 return false;
             }
 
-            var serverPathSegments = UriExtensions.GetPathSegments(_server.Url);
-            var uriPathSegments = UriExtensions.GetPathSegments(uri);
-            if (serverPathSegments.Length > uriPathSegments.Length)
-            {
-                DoesNotMatch();
-                return false;
-            }
-
+            var serverPathSegments = _server.Url.GetPathSegments();
+            var uriPathSegments = uri.GetPathSegments();
             // todo: match against server variables
-            if (serverPathSegments.SequenceEqual(uriPathSegments.Take(serverPathSegments.Length)))
-            {
-                var relativeSegments = uriPathSegments.Skip(serverPathSegments.Length);
-                relativeUri = new Uri("/" + string.Join('/', relativeSegments), UriKind.Relative);
+            if (serverPathSegments.SequenceEqual(uriPathSegments))
                 return true;
-            }
 
             DoesNotMatch();
             return false;
 
             void DoesNotMatch()
             {
-                _openApiEvaluationContext.Results.Fail($"{uri} does not match url {_server.Url}");
+                _openApiEvaluationContext.Results.Fail($"{uri} does not match server url {_server.Url}");
             }
         }
     }
