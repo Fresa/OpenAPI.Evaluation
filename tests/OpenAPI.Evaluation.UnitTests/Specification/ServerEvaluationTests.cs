@@ -1,10 +1,9 @@
-﻿using System.Text.Encodings.Web;
-using System.Text.Json;
-using System.Text.Json.Nodes;
+﻿using System.Text.Json.Nodes;
 using FluentAssertions;
 using Json.Pointer;
 using Json.Schema;
 using OpenAPI.Evaluation.Specification;
+using OpenAPI.Evaluation.UnitTests.XUnit;
 using Xunit.Abstractions;
 
 namespace OpenAPI.Evaluation.UnitTests.Specification;
@@ -43,16 +42,7 @@ public class ServerEvaluationTests
             new JsonNodeBaseDocument(serverJson!, new Uri("http://localhost")), reader, EvaluationOptions.Default);
         var evaluator = server.GetEvaluator(evaluationContext);
         evaluator.TryMatch(new Uri(uri, UriKind.RelativeOrAbsolute)).Should().Be(valid);
-        OutputEvaluationResult(evaluationContext);
+        _testOutputHelper.WriteEvaluationResult(evaluationContext);
         evaluationContext.Results.IsValid.Should().Be(valid);
-    }
-
-    private void OutputEvaluationResult(OpenApiEvaluationContext context)
-    {
-        _testOutputHelper.WriteLine(JsonSerializer.Serialize(context.Results, new JsonSerializerOptions
-        {
-            WriteIndented = true,
-            Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
-        }));
     }
 }

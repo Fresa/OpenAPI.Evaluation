@@ -27,4 +27,9 @@
     <ProjectReference Include="..\..\src\OpenAPI.Validation\OpenAPI.Evaluation.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Json\" />
+    <Folder Include="XUnit\" />
+  </ItemGroup>
+
 </Project>

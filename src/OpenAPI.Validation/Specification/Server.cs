@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using System.Text.Json.Nodes;
 using OpenAPI.Evaluation.Http;
 
@@ -21,13 +22,19 @@ public partial class Server
             var (name, value) = descriptionReader.GetProperty();
             _annotations.Add(name, value);
         }
-    }
 
-    internal static Server Parse(JsonNodeReader reader) => new(reader);
+        if (_reader.TryRead("variables", out var variablesReader))
+        {
+            Variables = ServerVariables.Parse(variablesReader);
+        }
+    }
     
+    internal static Server Parse(JsonNodeReader reader) => new(reader);
+
     public Uri Url { get; }
     public string? Description { get; }
-    
+    public ServerVariables? Variables { get; }
+
     internal Evaluator GetEvaluator(OpenApiEvaluationContext openApiEvaluationContext)
     {
         var context = openApiEvaluationContext.Evaluate(_reader);
@@ -61,7 +68,7 @@ public partial class Server
                 var uriParts = uri.GetLeftPart(UriPartial.Path).TrimEnd('/');
                 if (serverParts == uriParts)
                     return true;
-                
+
                 DoesNotMatch();
                 return false;
             }
