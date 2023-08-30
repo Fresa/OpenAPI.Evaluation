@@ -4,7 +4,7 @@ using System.Text.Json.Serialization;
 using Json.Pointer;
 using Json.Schema;
 
-namespace OpenAPI.Validation;
+namespace OpenAPI.Evaluation;
 
 [JsonConverter(typeof(OpenApiEvaluationResultsJsonConverter))]
 public class OpenApiEvaluationResults

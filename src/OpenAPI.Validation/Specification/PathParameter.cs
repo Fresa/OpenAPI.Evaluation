@@ -1,6 +1,6 @@
 using System.Text.Json.Nodes;
 
-namespace OpenAPI.Validation.Specification;
+namespace OpenAPI.Evaluation.Specification;
 
 public sealed class PathParameter : Parameter
 {

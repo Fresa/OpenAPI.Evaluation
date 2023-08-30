@@ -1,4 +1,4 @@
-namespace OpenAPI.Validation.Client;
+namespace OpenAPI.Evaluation.Client;
 
 public sealed class EvaluationHttpResponseMessage : HttpResponseMessage
 {

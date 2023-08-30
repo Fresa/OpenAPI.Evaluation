@@ -1,8 +1,7 @@
 using System.Net;
-using System.Runtime.CompilerServices;
 using System.Text;
 
-namespace OpenAPI.Validation.IntegrationTests.Http;
+namespace OpenAPI.Evaluation.IntegrationTests.Http;
 
 internal sealed class HttpServer : HttpMessageHandler
 {

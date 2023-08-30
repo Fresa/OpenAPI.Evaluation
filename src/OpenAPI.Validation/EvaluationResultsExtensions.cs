@@ -1,6 +1,6 @@
 using Json.Schema;
 
-namespace OpenAPI.Validation;
+namespace OpenAPI.Evaluation;
 
 internal static class EvaluationResultsExtensions
 {

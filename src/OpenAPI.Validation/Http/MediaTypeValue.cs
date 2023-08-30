@@ -1,4 +1,4 @@
-namespace OpenAPI.Validation.Http;
+namespace OpenAPI.Evaluation.Http;
 
 public sealed record MediaTypeValue
 {

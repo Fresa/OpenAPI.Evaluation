@@ -2,7 +2,7 @@ using Yaml2JsonNode;
 using YamlDotNet.RepresentationModel;
 using Path = System.IO.Path;
 
-namespace OpenAPI.Validation.IntegrationTests.OpenApi;
+namespace OpenAPI.Evaluation.IntegrationTests.OpenApi;
 
 internal static class OpenApi
 {

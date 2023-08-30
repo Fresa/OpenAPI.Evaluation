@@ -1,7 +1,6 @@
-using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Nodes;
 
-namespace OpenAPI.Validation.Specification;
+namespace OpenAPI.Evaluation.Specification;
 
 public sealed partial class Servers
 {

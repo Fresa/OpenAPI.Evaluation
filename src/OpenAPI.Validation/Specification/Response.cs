@@ -1,8 +1,8 @@
-using OpenAPI.Validation.Http;
 using System.Diagnostics.CodeAnalysis;
 using System.Net.Http.Headers;
+using OpenAPI.Evaluation.Http;
 
-namespace OpenAPI.Validation.Specification;
+namespace OpenAPI.Evaluation.Specification;
 
 public sealed class Response
 {

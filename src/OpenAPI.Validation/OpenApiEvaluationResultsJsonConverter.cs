@@ -1,7 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace OpenAPI.Validation;
+namespace OpenAPI.Evaluation;
 
 internal class OpenApiEvaluationResultsJsonConverter : JsonConverter<OpenApiEvaluationResults>
 {

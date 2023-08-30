@@ -1,14 +1,19 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net7.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFramework>net7.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="JsonSchema.Net" Version="5.1.0" />
-    <PackageReference Include="JsonSchema.Net.OpenApi" Version="2.0.0" />
-  </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="JsonSchema.Net" Version="5.1.0" />
+		<PackageReference Include="JsonSchema.Net.OpenApi" Version="2.0.0" />
+	</ItemGroup>
 
+	<ItemGroup>
+		<AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+			<_Parameter1>OpenAPI.Evaluation.UnitTests</_Parameter1>
+		</AssemblyAttribute>
+	</ItemGroup>
 </Project>

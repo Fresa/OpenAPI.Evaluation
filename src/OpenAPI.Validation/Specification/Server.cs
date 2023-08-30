@@ -1,7 +1,7 @@
 using System.Text.Json.Nodes;
-using OpenAPI.Validation.Http;
+using OpenAPI.Evaluation.Http;
 
-namespace OpenAPI.Validation.Specification;
+namespace OpenAPI.Evaluation.Specification;
 
 public partial class Server
 {

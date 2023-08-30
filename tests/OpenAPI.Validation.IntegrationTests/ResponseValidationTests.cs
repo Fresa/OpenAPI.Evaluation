@@ -4,7 +4,7 @@ using System.Text;
 using FluentAssertions;
 using Xunit.Abstractions;
 
-namespace OpenAPI.Validation.IntegrationTests;
+namespace OpenAPI.Evaluation.IntegrationTests;
 
 public class ResponseValidationTests : TestSpecification
 {

@@ -4,7 +4,7 @@ using System.Text.Json.Nodes;
 using Json.More;
 using Json.Pointer;
 
-namespace OpenAPI.Validation;
+namespace OpenAPI.Evaluation;
 
 internal sealed class JsonNodeReader
 {

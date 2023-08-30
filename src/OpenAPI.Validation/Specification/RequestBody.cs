@@ -1,7 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
-using OpenAPI.Validation.Http;
+using OpenAPI.Evaluation.Http;
 
-namespace OpenAPI.Validation.Specification;
+namespace OpenAPI.Evaluation.Specification;
 
 public sealed partial class RequestBody
 {

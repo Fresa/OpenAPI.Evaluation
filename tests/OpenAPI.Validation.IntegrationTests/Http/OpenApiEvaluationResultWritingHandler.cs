@@ -1,9 +1,9 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using OpenAPI.Validation.Client;
+using OpenAPI.Evaluation.Client;
 using Xunit.Abstractions;
 
-namespace OpenAPI.Validation.IntegrationTests.Http;
+namespace OpenAPI.Evaluation.IntegrationTests.Http;
 
 internal sealed class OpenApiEvaluationResultWritingHandler : DelegatingHandler
 {

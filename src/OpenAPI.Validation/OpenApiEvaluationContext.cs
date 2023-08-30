@@ -3,7 +3,7 @@ using System.Text.Json.Nodes;
 using Json.Pointer;
 using Json.Schema;
 
-namespace OpenAPI.Validation;
+namespace OpenAPI.Evaluation;
 
 internal sealed class OpenApiEvaluationContext
 {

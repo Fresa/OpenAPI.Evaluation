@@ -1,7 +1,7 @@
 using System.Text.Json;
 using Json.Schema;
 
-namespace OpenAPI.Validation;
+namespace OpenAPI.Evaluation;
 
 internal class JsonSchemaEvaluationException : JsonException
 {

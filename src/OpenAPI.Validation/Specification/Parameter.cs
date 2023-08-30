@@ -1,6 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 
-namespace OpenAPI.Validation.Specification;
+namespace OpenAPI.Evaluation.Specification;
 
 public abstract partial class Parameter
 {

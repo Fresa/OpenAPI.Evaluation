@@ -1,8 +1,8 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Net.Http.Headers;
-using OpenAPI.Validation.Http;
+using OpenAPI.Evaluation.Http;
 
-namespace OpenAPI.Validation.Specification;
+namespace OpenAPI.Evaluation.Specification;
 
 public sealed partial class Operation
 {

@@ -1,9 +1,9 @@
 using System.Net;
 using System.Text.Json.Nodes;
-using OpenAPI.Validation.Http;
-using OpenAPI.Validation.Specification;
+using OpenAPI.Evaluation.Http;
+using OpenAPI.Evaluation.Specification;
 
-namespace OpenAPI.Validation.Client;
+namespace OpenAPI.Evaluation.Client;
 
 public class EvaluationHandler : DelegatingHandler
 {

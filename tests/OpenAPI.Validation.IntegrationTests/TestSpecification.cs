@@ -1,8 +1,8 @@
-using OpenAPI.Validation.Client;
-using OpenAPI.Validation.IntegrationTests.Http;
+using OpenAPI.Evaluation.Client;
+using OpenAPI.Evaluation.IntegrationTests.Http;
 using Xunit.Abstractions;
 
-namespace OpenAPI.Validation.IntegrationTests;
+namespace OpenAPI.Evaluation.IntegrationTests;
 
 public abstract class TestSpecification : IAsyncLifetime
 {

@@ -1,4 +1,4 @@
-namespace OpenAPI.Validation;
+namespace OpenAPI.Evaluation;
 
 public static class OpenApiEvaluationResultsExtensions
 {

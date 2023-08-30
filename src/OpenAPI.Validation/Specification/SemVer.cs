@@ -1,4 +1,4 @@
-namespace OpenAPI.Validation.Specification;
+namespace OpenAPI.Evaluation.Specification;
 
 internal readonly struct SemVer
 {

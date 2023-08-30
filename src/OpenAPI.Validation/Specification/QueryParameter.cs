@@ -1,6 +1,6 @@
 using System.Collections.Specialized;
 
-namespace OpenAPI.Validation.Specification;
+namespace OpenAPI.Evaluation.Specification;
 
 public sealed class QueryParameter : Parameter
 {

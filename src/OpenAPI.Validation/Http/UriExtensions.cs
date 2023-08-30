@@ -1,4 +1,4 @@
-namespace OpenAPI.Validation.Http;
+namespace OpenAPI.Evaluation.Http;
 
 internal static class UriExtensions
 {

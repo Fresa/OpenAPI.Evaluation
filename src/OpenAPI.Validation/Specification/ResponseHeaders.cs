@@ -2,7 +2,7 @@ using System.Collections;
 using System.Diagnostics.CodeAnalysis;
 using System.Net.Http.Headers;
 
-namespace OpenAPI.Validation.Specification;
+namespace OpenAPI.Evaluation.Specification;
 
 public sealed class ResponseHeaders : IReadOnlyDictionary<string, HeaderParameter>
 {

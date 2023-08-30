@@ -1,6 +1,6 @@
 using System.Text.Json;
 
-namespace OpenAPI.Validation;
+namespace OpenAPI.Evaluation;
 
 public class OpenApiEvaluationException : JsonException
 {

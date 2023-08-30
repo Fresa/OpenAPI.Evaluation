@@ -1,6 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 
-namespace OpenAPI.Validation.Client;
+namespace OpenAPI.Evaluation.Client;
 
 public static class HttpResponseMessageExtensions
 {

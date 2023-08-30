@@ -2,7 +2,7 @@ using System.Collections;
 using System.Net;
 using System.Net.Http.Headers;
 
-namespace OpenAPI.Validation.Specification;
+namespace OpenAPI.Evaluation.Specification;
 
 public sealed partial class Parameters : IEnumerable<Parameter>
 {
