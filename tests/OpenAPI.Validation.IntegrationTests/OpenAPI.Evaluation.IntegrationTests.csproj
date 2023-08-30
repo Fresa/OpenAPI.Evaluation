@@ -25,7 +25,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\OpenAPI.Validation\OpenAPI.Validation.csproj" />
+    <ProjectReference Include="..\..\src\OpenAPI.Validation\OpenAPI.Evaluation.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -3,9 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.5.33516.290
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OpenAPI.Validation", "src\OpenAPI.Validation\OpenAPI.Validation.csproj", "{6175CB77-7730-4BD2-BBE1-F90E99C79546}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OpenAPI.Evaluation", "src\OpenAPI.Validation\OpenAPI.Evaluation.csproj", "{6175CB77-7730-4BD2-BBE1-F90E99C79546}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenAPI.Validation.IntegrationTests", "tests\OpenAPI.Validation.IntegrationTests\OpenAPI.Validation.IntegrationTests.csproj", "{7D5C97F9-A748-4A5C-B01C-A74DA64C194D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OpenAPI.Evaluation.IntegrationTests", "tests\OpenAPI.Validation.IntegrationTests\OpenAPI.Evaluation.IntegrationTests.csproj", "{7D5C97F9-A748-4A5C-B01C-A74DA64C194D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenAPI.Evaluation.UnitTests", "tests\OpenAPI.Evaluation.UnitTests\OpenAPI.Evaluation.UnitTests.csproj", "{6F94A1E7-435F-47D1-ACB4-2B8AC1ED1AFF}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +23,10 @@ Global
 		{7D5C97F9-A748-4A5C-B01C-A74DA64C194D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7D5C97F9-A748-4A5C-B01C-A74DA64C194D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7D5C97F9-A748-4A5C-B01C-A74DA64C194D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6F94A1E7-435F-47D1-ACB4-2B8AC1ED1AFF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6F94A1E7-435F-47D1-ACB4-2B8AC1ED1AFF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6F94A1E7-435F-47D1-ACB4-2B8AC1ED1AFF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6F94A1E7-435F-47D1-ACB4-2B8AC1ED1AFF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

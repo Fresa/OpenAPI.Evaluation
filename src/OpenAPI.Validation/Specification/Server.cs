@@ -13,8 +13,6 @@ public partial class Server
         _reader = reader;
 
         var url = _reader.Read("url").GetValue<string>().Trim();
-        if (!url.EndsWith('/'))
-            url += "/";
         Url = new Uri(url, UriKind.RelativeOrAbsolute);
 
         if (_reader.TryRead("description", out var descriptionReader))
