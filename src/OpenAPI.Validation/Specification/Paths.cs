@@ -1,18 +1,20 @@
+using System.Collections;
 using System.Diagnostics.CodeAnalysis;
 using OpenAPI.Evaluation.Http;
 
 namespace OpenAPI.Evaluation.Specification;
 
-public sealed partial class Paths
+public sealed partial class Paths : IReadOnlyDictionary<string, Path>
 {
     private readonly JsonNodeReader _reader;
+    private readonly Dictionary<string, Path> _pathItems;
 
     private Paths(JsonNodeReader reader)
     {
         _reader = reader;
 
         _pathItems = _reader.ReadChildren()
-            .ToDictionary(nodeReader => nodeReader.Key, nodeReader => Path.Parse(nodeReader));
+            .ToDictionary(nodeReader => nodeReader.Key, Path.Parse);
     }
 
     internal static Paths Parse(JsonNodeReader reader)
@@ -20,8 +22,15 @@ public sealed partial class Paths
         return new Paths(reader);
     }
 
-    private readonly Dictionary<string, Path> _pathItems;
-    public IReadOnlyDictionary<string, Path> PathItems => _pathItems.AsReadOnly();
+    public IEnumerator<KeyValuePair<string, Path>> GetEnumerator() => _pathItems.GetEnumerator();
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+    public int Count => _pathItems.Count;   
+    public bool ContainsKey(string key) => _pathItems.ContainsKey(key);
+    public bool TryGetValue(string key, [MaybeNullWhen(false)] out Path value) =>
+        _pathItems.TryGetValue(key, out value);
+    public Path this[string key] => _pathItems[key];
+    public IEnumerable<string> Keys => _pathItems.Keys;
+    public IEnumerable<Path> Values => _pathItems.Values;
 
     internal Evaluator GetEvaluator(OpenApiEvaluationContext openApiEvaluationContext) => 
         new(openApiEvaluationContext.Evaluate(_reader), this);
@@ -51,7 +60,7 @@ public sealed partial class Paths
             var reversedRequestedPathSegments = requestedPathSegments
                 .Reverse()
                 .ToList();
-            foreach (var (pathTemplate, pathItem) in _paths.PathItems)
+            foreach (var (pathTemplate, pathItem) in _paths)
             {
                 var reversedApiPathSegments =
                     pathTemplate
@@ -97,7 +106,7 @@ public sealed partial class Paths
                 return true;
             }
             
-            _openApiEvaluationContext.Results.Fail($"'{string.Join('/', requestedPathSegments)}' does not match any of the paths: {string.Join(", ", _paths.PathItems.Keys)}");
+            _openApiEvaluationContext.Results.Fail($"'{string.Join('/', requestedPathSegments)}' does not match any of the paths: {string.Join(", ", _paths.Keys)}");
             pathItemEvaluator = null;
             serverUri = null;
             return false;
