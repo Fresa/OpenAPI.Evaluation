@@ -1,10 +1,12 @@
+using System.Collections;
 using System.Text.Json.Nodes;
 
 namespace OpenAPI.Evaluation.Specification;
 
-public sealed partial class Servers
+public sealed partial class Servers : IReadOnlyList<Server>
 {
     private readonly JsonNodeReader _reader;
+    private readonly List<Server> _servers = new();
 
     private Servers(JsonNodeReader reader)
     {
@@ -15,7 +17,7 @@ public sealed partial class Servers
             _servers.Add(Server.Parse(serverReader));
         }
 
-        if (_servers.Any()) 
+        if (_servers.Any())
             return;
 
         var defaultServer = JsonNode.Parse("""
@@ -28,8 +30,6 @@ public sealed partial class Servers
 
     internal static Servers Parse(JsonNodeReader reader) => new(reader);
 
-    private readonly List<Server> _servers = new();
-    public IReadOnlyList<Server> ServerObjects => _servers.AsReadOnly();
 
     internal Evaluator GetEvaluator(OpenApiEvaluationContext openApiEvaluationContext)
     {
@@ -44,15 +44,18 @@ public sealed partial class Servers
         internal Evaluator(OpenApiEvaluationContext openApiEvaluationContext, Servers servers)
         {
             _openApiEvaluationContext = openApiEvaluationContext;
-            _openApiEvaluationContext.Results.IsValidWhenExactlyOneDetailIsValid();
-
             _servers = servers;
         }
 
-        internal bool TryMatch(Uri uri) => 
-            _servers.ServerObjects
+        internal bool TryMatch(Uri uri) =>
+            _servers
                 .Any(serverObject => serverObject
                     .GetEvaluator(_openApiEvaluationContext)
                     .TryMatch(uri));
     }
+
+    public IEnumerator<Server> GetEnumerator() => _servers.GetEnumerator();
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+    public int Count => _servers.Count;
+    public Server this[int index] => _servers[index];
 }
