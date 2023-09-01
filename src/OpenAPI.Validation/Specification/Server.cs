@@ -14,7 +14,7 @@ public partial class Server
         _reader = reader;
 
         Url = _reader.Read("url").GetValue<string>().Trim('/');
-
+        
         if (_reader.TryRead("description", out var descriptionReader))
         {
             Description = descriptionReader.GetValue<string>();
@@ -33,6 +33,10 @@ public partial class Server
             var curlyStartIdx = Url.IndexOf('{', i);
             if (curlyStartIdx == -1)
             {
+                var invalidCurlyEndIdx = Url.IndexOf('}', i);
+                if (invalidCurlyEndIdx != -1)
+                    throw new ArgumentException(
+                        $$"""Server url {{Url}} is missing a "{" for the corresponding "}" at position {{invalidCurlyEndIdx}}")""");
                 _urlSegments.Add((Url[i..], false));
                 break;
             }
