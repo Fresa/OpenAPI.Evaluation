@@ -18,31 +18,145 @@ public class ServerEvaluationTests
     }
 
     [Theory]
-    [InlineData("http://localhost/v1/user", "http://localhost/v1/user", true)]
-    [InlineData("http://localhost/v1/user", "http://localhost/v1/user/", true)]
-    [InlineData("http://localhost/v1/user/", "http://localhost/v1/user", true)]
-    [InlineData("http://localhost/v1/", "http://localhost/v1/user", false)]
-    [InlineData("http://localhost/v1/user", "http://localhost/v1", false)]
-    [InlineData("/v1/user", "http://localhost/v1/user", false)]
-    [InlineData("/v1/user", "/v1/user", true)]
-    [InlineData("http://localhost/v1/user", "/v1/user", false)]
-    [InlineData("/v1/user", "/v1/user/1", false)]
-    [InlineData("/v1/user/1", "/v1/user", false)]
-    public void Given_server_urls_When_evaluating_urls_They_should_evaluate_correctly(string serverUrl, string uri, bool valid)
-    {
-        var serverJson = JsonNode.Parse($$"""
-            {
-                "url": "{{serverUrl}}"
+    [InlineData("""
+        {
+            "url": "http://localhost/v1/user"
+        }
+        """, "http://localhost/v1/user", true)]
+    [InlineData("""
+        {
+            "url": "http://localhost/v1/user"
+        }
+        """, "http://localhost/v1/user/", true)]
+    [InlineData("""
+        {
+            "url": "http://localhost/v1/user/"
+        }
+        """, "http://localhost/v1/user", true)]
+    [InlineData("""
+        {
+            "url": "http://localhost/v1/"
+        }
+        """, "http://localhost/v1/user", false)]
+    [InlineData("""
+        {
+            "url": "http://localhost/v1/user"
+        }
+        """, "http://localhost/v1", false)]
+    [InlineData("""
+        {
+            "url": "/v1/user/"
+        }
+        """, "http://localhost/v1/user", true)]
+    [InlineData("""
+        {
+            "url": "/v1/user"
+        }
+        """, "http://localhost/v1/user/", true)]
+    [InlineData("""
+        {
+            "url": "/v1/user"
+        }
+        """, "http://localhost/v1/user", true)]
+    [InlineData("""
+        {
+            "url": "/v1/user"
+        }
+        """, "http://localhost/v1/user/1", false)]
+    [InlineData("""
+        {
+            "url": "/v1/user/1"
+        }
+        """, "http://localhost/v1/user", false)]
+    [InlineData("""
+        {
+            "url": "http://{host}/v1/user/",
+            "variables": {
+                "host": {
+                    "default": "localhost"
+                }
             }
-            """);
-        serverJson.Should().NotBeNull();
-        var reader = new JsonNodeReader(serverJson!, JsonPointer.Empty);
+        }
+        """, "http://localhost/v1/user", true)]
+    [InlineData("""
+        {
+            "url": "http://{host}/v1/user",
+            "variables": {
+                "host": {
+                    "default": "foo"
+                }
+            }
+        }
+        """, "http://localhost/v1/user", false)]
+    [InlineData("""
+        {
+            "url": "http://{host}/v1/user",
+            "variables": {
+                "host": {
+                    "default": "localhost",
+                    "enum": [
+                        "localhost",
+                        "foo"
+                    ]
+                }
+            }
+        }
+        """, "http://foo/v1/user", true)]
+    [InlineData("""
+        {
+            "url": "http://{host}/v1/user",
+            "variables": {
+                "host": {
+                    "default": "localhost",
+                    "enum": [
+                        "localhost",
+                        "foo"
+                    ]
+                }
+            }
+        }
+        """, "http://bar/v1/user", false)]
+    [InlineData("""
+        {
+            "url": "{scheme}://{host}/v1/{user}",
+            "variables": {
+                "host": {
+                    "default": "localhost",
+                    "enum": [
+                        "localhost",
+                        "foo"
+                    ]
+                },
+                "scheme": {
+                    "default": "https",
+                    "enum": [
+                        "http",
+                        "https"
+                    ]
+                },
+                "user": {
+                    "default": "user"
+                }
+            }
+        }
+        """, "http://foo/v1/user/", true)]
+    public void Given_server_urls_When_evaluating_urls_They_should_evaluate_correctly(string serverJson, string uri, bool valid)
+    {
+        var serverNode = JsonNode.Parse(serverJson);
+        serverNode.Should().NotBeNull();
+        var reader = new JsonNodeReader(serverNode!, JsonPointer.Empty);
         var server = Server.Parse(reader);
         var evaluationContext = new OpenApiEvaluationContext(
-            new JsonNodeBaseDocument(serverJson!, new Uri("http://localhost")), reader, EvaluationOptions.Default);
+            new JsonNodeBaseDocument(serverNode!, new Uri("http://localhost")), reader, EvaluationOptions.Default);
         var evaluator = server.GetEvaluator(evaluationContext);
-        evaluator.TryMatch(new Uri(uri, UriKind.RelativeOrAbsolute)).Should().Be(valid);
-        _testOutputHelper.WriteEvaluationResult(evaluationContext);
+        try
+        {
+            evaluator.TryMatch(new Uri(uri, UriKind.RelativeOrAbsolute)).Should().Be(valid);
+        }
+        finally
+        {
+            _testOutputHelper.WriteEvaluationResult(evaluationContext);
+        }
         evaluationContext.Results.IsValid.Should().Be(valid);
     }
 }
