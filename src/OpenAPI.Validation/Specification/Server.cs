@@ -1,4 +1,5 @@
 using System.Text.Json.Nodes;
+using OpenAPI.Evaluation.Collections;
 using OpenAPI.Evaluation.Http;
 
 namespace OpenAPI.Evaluation.Specification;
@@ -6,20 +7,21 @@ namespace OpenAPI.Evaluation.Specification;
 public partial class Server
 {
     private readonly JsonNodeReader _reader;
-    private readonly Dictionary<string, JsonNode?> _annotations = new();
+    private readonly IDictionary<string, JsonNode?> _annotations = new Dictionary<string, JsonNode?>();
     private readonly List<(string Segment, bool IsVariableKey)> _urlSegments = new();
 
     private Server(JsonNodeReader reader)
     {
         _reader = reader;
 
-        Url = _reader.Read("url").GetValue<string>().Trim('/');
-        
+        var urlReader = _reader.Read("url");
+        Url = urlReader.GetValue<string>().Trim('/');
+        _annotations.Add(urlReader);
+
         if (_reader.TryRead("description", out var descriptionReader))
         {
             Description = descriptionReader.GetValue<string>();
-            var (name, value) = descriptionReader.GetProperty();
-            _annotations.Add(name, value);
+            _annotations.Add(descriptionReader);
         }
 
         if (_reader.TryRead("variables", out var variablesReader))
@@ -60,15 +62,14 @@ public partial class Server
     internal static Server Parse(JsonNodeReader reader) => new(reader);
 
     public string Url { get; }
-    public IReadOnlyList<(string Segment, bool IsVariableKey)> UrlTemplateSegments => _urlSegments.AsReadOnly();
+    private IReadOnlyList<(string Segment, bool IsVariableKey)> UrlTemplateSegments => _urlSegments.AsReadOnly();
     public string? Description { get; }
     public ServerVariables? Variables { get; }
 
     internal Evaluator GetEvaluator(OpenApiEvaluationContext openApiEvaluationContext)
     {
         var context = openApiEvaluationContext.Evaluate(_reader);
-        if (_annotations.Any())
-            context.Results.SetAnnotations(_annotations);
+        context.Results.SetAnnotations(_annotations);
         return new Evaluator(context, this);
     }
 
@@ -96,7 +97,7 @@ public partial class Server
                 return true;
             }
 
-            _openApiEvaluationContext.Results.Fail($"{uri} does not match server url {_server.Url}"); 
+            _openApiEvaluationContext.Results.Fail($"{uri} does not match server url {_server.Url}");
             return false;
         }
 

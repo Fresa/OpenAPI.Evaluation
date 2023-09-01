@@ -65,16 +65,12 @@ public class OpenApiEvaluationResults
         _schemaEvaluationResults.Add(result);
     }
 
-    private Dictionary<string, JsonNode?>? _annotations;
+    private IDictionary<string, JsonNode?>? _annotations;
     public IReadOnlyDictionary<string, JsonNode?>? Annotations => _annotations?.AsReadOnly();
     internal bool PreserveDroppedAnnotations { get; }
 
-    internal void SetAnnotations(IReadOnlyDictionary<string, JsonNode?> annotations)
+    internal void SetAnnotations(IDictionary<string, JsonNode?>? annotations)
     {
-        _annotations ??= new Dictionary<string, JsonNode?>();
-        foreach (var annotation in annotations)
-        {
-            _annotations[annotation.Key] = annotation.Value;
-        }
+        _annotations = annotations;
     }
 }

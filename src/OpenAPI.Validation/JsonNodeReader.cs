@@ -82,7 +82,7 @@ internal sealed class JsonNodeReader
 
 
     internal T GetValue<T>() => _root.GetValue<T>();
-    internal (string Name, JsonNode? Value) GetProperty() => new(Key, _root);
+    internal KeyValuePair<string, JsonNode?> GetProperty() => new(Key, _root);
 
     internal IEnumerable<JsonNodeReader> ReadChildren()
     {
@@ -107,5 +107,10 @@ internal sealed class JsonNodeReader
             default:
                 throw new NotImplementedException($"Nodes of type {_root.GetType()} is currently not supported");
         }
+    }
+    internal void Deconstruct(out string key, out JsonNode? value)
+    {
+        key = Key;
+        value = _root;
     }
 }

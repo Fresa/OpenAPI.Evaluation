@@ -44,6 +44,8 @@ public sealed partial class Servers : IReadOnlyList<Server>
         internal Evaluator(OpenApiEvaluationContext openApiEvaluationContext, Servers servers)
         {
             _openApiEvaluationContext = openApiEvaluationContext;
+            _openApiEvaluationContext.Results.IsValidWhenExactlyOneDetailIsValid();
+
             _servers = servers;
         }
 
