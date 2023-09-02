@@ -48,7 +48,7 @@ public sealed class CookieParameter : Parameter
             {
                 if (_parameter.Required)
                 {
-                    _openApiEvaluationContext.EvaluateAsRequired(_parameter.Name);
+                    _openApiEvaluationContext.Results.Fail($"Parameter '{_parameter.Name}' is required");
                 }
                 return;
             }
