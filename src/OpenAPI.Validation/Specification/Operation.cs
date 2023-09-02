@@ -8,7 +8,7 @@ public sealed partial class Operation
 {
     private readonly JsonNodeReader _reader;
 
-    private Operation(JsonNodeReader reader, Parameters? pathItemParameters)
+    private Operation(JsonNodeReader reader)
     {
         _reader = reader;
 
@@ -18,7 +18,7 @@ public sealed partial class Operation
         }
         if (_reader.TryRead("parameters", out var parametersReader))
         {
-            Parameters = Parameters.Parse(parametersReader, pathItemParameters);
+            Parameters = Parameters.Parse(parametersReader);
         }
         if (_reader.TryRead("responses", out var responsesReader))
         {
@@ -30,28 +30,37 @@ public sealed partial class Operation
         }
     }
 
-    internal static Operation Parse(JsonNodeReader reader, Parameters? pathItemParameters) => new(reader, pathItemParameters);
+    internal static Operation Parse(JsonNodeReader reader) => new(reader);
 
     public RequestBody? RequestBody { get; }
     public Parameters? Parameters { get; }
     public Responses? Responses { get; }
     public Servers? Servers { get; }
 
-    internal Evaluator GetEvaluator(OpenApiEvaluationContext openApiEvaluationContext, RoutePattern routePattern) =>
-        new(openApiEvaluationContext.Evaluate(_reader), this, routePattern);
+    internal Evaluator GetEvaluator(OpenApiEvaluationContext openApiEvaluationContext,
+        RoutePattern routePattern,
+        Parameters.Evaluator? pathItemParametersEvaluator) =>
+        new(openApiEvaluationContext.Evaluate(_reader), 
+            this, 
+            routePattern,
+            pathItemParametersEvaluator);
 
     public class Evaluator
     {
         private readonly OpenApiEvaluationContext _openApiEvaluationContext;
         private readonly Operation _operation;
         private readonly RoutePattern _routePattern;
+        private readonly Parameters.Evaluator? _pathItemParametersEvaluator;
 
-        internal Evaluator(OpenApiEvaluationContext openApiEvaluationContext, Operation operation,
-            RoutePattern routePattern)
+        internal Evaluator(OpenApiEvaluationContext openApiEvaluationContext, 
+            Operation operation,
+            RoutePattern routePattern, 
+            Parameters.Evaluator? pathItemParametersEvaluator)
         {
             _openApiEvaluationContext = openApiEvaluationContext;
             _operation = operation;
             _routePattern = routePattern;
+            _pathItemParametersEvaluator = pathItemParametersEvaluator;
         }
 
         public bool TryMatchRequestContent(MediaTypeValue mediaType,
@@ -78,21 +87,25 @@ public sealed partial class Operation
 
         public void EvaluateRequestHeaders(HttpRequestHeaders headers)
         {
+            _pathItemParametersEvaluator?.EvaluateHeaders(headers);
             _operation.Parameters?.GetEvaluator(_openApiEvaluationContext).EvaluateHeaders(headers);
         }
 
         public void EvaluateRequestPathParameters()
         {
+            _pathItemParametersEvaluator?.EvaluatePath(_routePattern);
             _operation.Parameters?.GetEvaluator(_openApiEvaluationContext).EvaluatePath(_routePattern);
         }
 
         public void EvaluateRequestQueryParameters(Uri uri)
         {
+            _pathItemParametersEvaluator?.EvaluateQuery(uri);
             _operation.Parameters?.GetEvaluator(_openApiEvaluationContext).EvaluateQuery(uri);
         }
 
         public void EvaluateRequestCookies(Uri requestUri, HttpRequestHeaders headers)
         {
+            _pathItemParametersEvaluator?.EvaluateCookies(requestUri, headers);
             _operation.Parameters?.GetEvaluator(_openApiEvaluationContext).EvaluateCookies(requestUri, headers);
         }
 

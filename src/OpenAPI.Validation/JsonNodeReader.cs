@@ -80,9 +80,7 @@ internal sealed class JsonNodeReader
         return new JsonNodeReader(node, Trail.Combine(pointer));
     }
 
-
     internal T GetValue<T>() => _root.GetValue<T>();
-    internal KeyValuePair<string, JsonNode?> GetProperty() => new(Key, _root);
 
     internal IEnumerable<JsonNodeReader> ReadChildren()
     {

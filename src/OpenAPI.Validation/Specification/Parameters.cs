@@ -9,29 +9,16 @@ public sealed partial class Parameters : IEnumerable<Parameter>
     private readonly JsonNodeReader _reader;
     private readonly IEnumerable<Parameter> _parameters;
 
-    private Parameters(JsonNodeReader reader, Parameters? baseParameters = null)
+    private Parameters(JsonNodeReader reader, IEnumerable<Parameter> parameters)
     {
         _reader = reader;
-        var parameters = ReadParameters();
-        if (baseParameters != null)
-        {
-            foreach (var baseParameter in baseParameters)
-            {
-                if (!parameters.Exists(readParameter =>
-                        readParameter.In == baseParameter.In &&
-                        readParameter.Name == baseParameter.Name))
-                {
-                    parameters.Add(baseParameter);
-                }
-            }
-        }
         _parameters = parameters;
     }
-
-    private List<Parameter> ReadParameters()
+    
+    private static IEnumerable<Parameter> ReadParameters(JsonNodeReader reader)
     {
         var readParameters = new List<Parameter>();
-        foreach (var parameterReader in _reader.ReadChildren())
+        foreach (var parameterReader in reader.ReadChildren())
         {
             if (!Parameter.TryParse(parameterReader, out var parameter))
                 continue;
@@ -49,7 +36,15 @@ public sealed partial class Parameters : IEnumerable<Parameter>
         return readParameters;
     }
 
-    internal static Parameters Parse(JsonNodeReader reader, Parameters? baseParameters = null) => new(reader, baseParameters);
+    private readonly UniqueParameterComparer _uniqueParameterComparer = new();
+    internal Parameters Except(Parameters parameters) => 
+        new(_reader, this.Except(parameters, _uniqueParameterComparer));
+
+    internal static Parameters Parse(JsonNodeReader reader)
+    {
+        var parameters = ReadParameters(reader);
+        return new(reader, parameters);
+    }
 
     public IEnumerator<Parameter> GetEnumerator() => _parameters.GetEnumerator();
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
@@ -119,6 +114,21 @@ public sealed partial class Parameters : IEnumerable<Parameter>
             {
                 parameter.GetEvaluator(_openApiEvaluationContext).Evaluate(cookies);
             }
+        }
+    }
+
+    private class UniqueParameterComparer : IEqualityComparer<Parameter>
+    {
+        public bool Equals(Parameter? x, Parameter? y) =>
+            x?.Name == y?.Name &&
+            x != null && y != null && x.In.Equals(y.In, StringComparison.InvariantCultureIgnoreCase);
+
+        public int GetHashCode(Parameter obj)
+        {
+            var hash = new HashCode();
+            hash.Add(obj.Name);
+            hash.Add(obj.In, StringComparer.InvariantCultureIgnoreCase);
+            return hash.ToHashCode();
         }
     }
 }

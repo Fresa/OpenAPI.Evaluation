@@ -1,12 +1,13 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Nodes;
+using OpenAPI.Evaluation.Collections;
 
 namespace OpenAPI.Evaluation.Specification;
 
 public sealed partial class Path
 {
     private readonly JsonNodeReader _reader;
-    private readonly Dictionary<string, JsonNode?> _annotations = new();
+    private readonly IDictionary<string, JsonNode?> _annotations = new Dictionary<string, JsonNode?>();
 
     private Path(JsonNodeReader reader)
     {
@@ -15,14 +16,12 @@ public sealed partial class Path
         if (_reader.TryRead("summary", out var summaryReader))
         {
             Summary = summaryReader.GetValue<string>();
-            var (name, value) = summaryReader.GetProperty();
-            _annotations.Add(name, value);
+            _annotations.Add(summaryReader);
         }
         if (_reader.TryRead("description", out var descriptionReader))
         {
             Description = descriptionReader.GetValue<string>();
-            var (name, value) = descriptionReader.GetProperty();
-            _annotations.Add(name, value);
+            _annotations.Add(descriptionReader);
         }
 
         if (_reader.TryRead("parameters", out var parametersReader))
@@ -45,26 +44,26 @@ public sealed partial class Path
 
         Operation? ReadOperation(string name)
         {
-            if (!reader.TryRead(name, out var operationReader)) 
+            if (!reader.TryRead(name, out var operationReader))
                 return null;
 
-            var operation = Operation.Parse(operationReader, Parameters);
+            var operation = Operation.Parse(operationReader);
             _operations.Add(name, operation);
             return operation;
         }
     }
-    
-    internal static Path Parse(JsonNodeReader reader) => new Path(reader);
+
+    internal static Path Parse(JsonNodeReader reader) => new(reader);
     public string? Summary { get; }
-    public string? Description { get; set; }
-    public Operation? Get { get; private init; }
-    public Operation? Put { get; internal init; }
-    public Operation? Post { get; private init; }
-    public Operation? Delete { get; private init; }
-    public Operation? Options { get; private init; }
-    public Operation? Head { get; private init; }
-    public Operation? Patch { get; private init; }
-    public Operation? Trace { get; private init; }
+    public string? Description { get; }
+    public Operation? Get { get; }
+    public Operation? Put { get; }
+    public Operation? Post { get; }
+    public Operation? Delete { get; }
+    public Operation? Options { get; }
+    public Operation? Head { get; }
+    public Operation? Patch { get; }
+    public Operation? Trace { get; }
 
     private readonly Dictionary<string, Operation> _operations = new();
     public IReadOnlyDictionary<string, Operation> Operations => _operations.AsReadOnly();
@@ -74,8 +73,7 @@ public sealed partial class Path
     internal Evaluator GetEvaluator(OpenApiEvaluationContext openApiEvaluationContext, RoutePattern routePattern)
     {
         var context = openApiEvaluationContext.Evaluate(_reader);
-        if (_annotations.Any())
-            context.Results.SetAnnotations(_annotations);
+        context.Results.SetAnnotations(_annotations);
         return new Evaluator(context, this, routePattern);
     }
 
@@ -91,15 +89,27 @@ public sealed partial class Path
             _pathItem = pathItem;
             _routePattern = routePattern;
         }
-        
+
         internal bool TryMatch(string method, [NotNullWhen(true)] out Operation.Evaluator? operationEvaluator)
         {
             foreach (var (operationMethod, operationObject) in _pathItem.Operations)
             {
-                if (!operationMethod.Equals(method, StringComparison.CurrentCultureIgnoreCase)) 
+                if (!operationMethod.Equals(method, StringComparison.CurrentCultureIgnoreCase))
                     continue;
 
-                operationEvaluator = operationObject.GetEvaluator(_openApiEvaluationContext, _routePattern);
+                Parameters? nonOverriddenPathParameters = null;
+                if (_pathItem.Parameters != null)
+                {
+                    nonOverriddenPathParameters =
+                        operationObject.Parameters == null
+                            ? _pathItem.Parameters
+                            : _pathItem.Parameters.Except(operationObject.Parameters);
+                }
+                
+                operationEvaluator = operationObject.GetEvaluator(
+                    _openApiEvaluationContext, 
+                    _routePattern,
+                    nonOverriddenPathParameters?.GetEvaluator(_openApiEvaluationContext));
                 return true;
             }
 
