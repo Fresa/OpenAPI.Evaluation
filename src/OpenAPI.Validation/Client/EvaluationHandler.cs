@@ -86,11 +86,10 @@ public class EvaluationHandler : DelegatingHandler
             return CreateEvaluationResponseMessage(response, evaluationResults);
         }
 
-        var responseContentType = response.Content.Headers.ContentType ?? throw new ArgumentNullException(
-            $"{nameof(response)}.{nameof(response.Content)}.{nameof(response.Content.Headers)}.{response.Content.Headers.ContentType}",
-            "Missing response content header content-type");
-
-        if (!responseEvaluator.TryMatchResponseContent(MediaTypeValue.Parse(responseContentType.ToString()),
+        var responseContentType = response.Content.Headers.ContentType;
+        var mediaType = responseContentType == null ? null : MediaTypeValue.Parse(responseContentType.ToString());
+        if (!responseEvaluator.TryMatchResponseContent(
+                mediaType,
                 out var responseMediaTypeEvaluator))
         {
             return CreateEvaluationResponseMessage(response, evaluationResults);
@@ -172,11 +171,10 @@ public class EvaluationHandler : DelegatingHandler
             return CreateEvaluationResponseMessage(response, evaluationResults);
         }
 
-        var responseContentType = response.Content.Headers.ContentType ?? throw new ArgumentNullException(
-            $"{nameof(response)}.{nameof(response.Content)}.{nameof(response.Content.Headers)}.{response.Content.Headers.ContentType}",
-            "Missing response content header content-type");
-
-        if (!responseEvaluator.TryMatchResponseContent(MediaTypeValue.Parse(responseContentType.ToString()),
+        var responseContentType = response.Content.Headers.ContentType;
+        var mediaType = responseContentType == null ? null : MediaTypeValue.Parse(responseContentType.ToString());
+        if (!responseEvaluator.TryMatchResponseContent(
+                mediaType,
                 out var responseMediaTypeEvaluator))
         {
             return CreateEvaluationResponseMessage(response, evaluationResults);

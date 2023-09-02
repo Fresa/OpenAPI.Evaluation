@@ -48,16 +48,30 @@ public sealed class Response
             _response.Headers?.GetEvaluator(_openApiEvaluationContext).EvaluateRequestHeaders(headers);
         }
 
-        internal bool TryMatchResponseContent(MediaTypeValue mediaType,
+        internal bool TryMatchResponseContent(MediaTypeValue? mediaType,
             [NotNullWhen(true)] out MediaType.Evaluator? mediaTypeEvaluator)
         {
+            if (mediaType == null)
+            {
+                mediaTypeEvaluator = null;
+                if (_response.Content == null)
+                {
+                    return false;
+                }
+
+                _openApiEvaluationContext.Results.Fail(
+                    "Media type is not specified but there is content defined");
+                return false;
+            }
+
             if (_response.Content != null)
             {
                 return _response.Content.GetEvaluator(_openApiEvaluationContext)
                     .TryMatch(mediaType, out mediaTypeEvaluator);
             }
 
-            _openApiEvaluationContext.Results.Fail("There is no response content defined");
+            _openApiEvaluationContext.Results.Fail(
+                $"Media type '{mediaType}' was requested, but there is no content defined");
             mediaTypeEvaluator = null;
             return false;
         }

@@ -31,6 +31,8 @@ internal sealed class HttpServer : HttpMessageHandler
     private HttpServer AddPostHandler(Uri uri, Func<HttpResponseMessage> createResponse) =>
         AddHandler(uri, HttpMethod.Post, createResponse);
 
+    internal HttpServer AddGetResponse(Uri uri) => 
+        AddGetHandler(uri, () => new HttpResponseMessage(HttpStatusCode.OK));
     internal HttpServer AddGetResponse(Uri uri, string json) =>
         AddGetHandler(uri, () => new HttpResponseMessage(HttpStatusCode.OK)
         {
