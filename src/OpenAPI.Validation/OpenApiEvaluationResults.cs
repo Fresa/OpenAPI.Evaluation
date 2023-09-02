@@ -39,13 +39,20 @@ public class OpenApiEvaluationResults
     public IReadOnlyList<string>? Errors => _errors?.AsReadOnly();
     private List<EvaluationResults>? _schemaEvaluationResults;
     public IReadOnlyList<EvaluationResults>? SchemaEvaluationResults => _schemaEvaluationResults?.AsReadOnly();
-    internal OpenApiEvaluationResults AddDetailsFrom(JsonNodeReader result)
+    internal OpenApiEvaluationResults AddDetailsFrom(JsonNodeReader reader)
     {
+        var existingDetails = _details?.FirstOrDefault(results => 
+            results.EvaluationPath == reader.Trail);
+        if (existingDetails != null)
+        {
+            return existingDetails;
+        }
+
         var details = new OpenApiEvaluationResults(PreserveDroppedAnnotations)
         {
             SpecificationLocation =
-                new Uri(SpecificationLocation, result.RootPath.ToString(JsonPointerStyle.UriEncoded)),
-            EvaluationPath = result.Trail
+                new Uri(SpecificationLocation, reader.RootPath.ToString(JsonPointerStyle.UriEncoded)),
+            EvaluationPath = reader.Trail
         };
         _details ??= new List<OpenApiEvaluationResults>();
         _details.Add(details);
