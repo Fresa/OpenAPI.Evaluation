@@ -35,8 +35,6 @@ paths:
     post:
       summary: Create a user
       operationId: postUser
-      parameters:
-        - $ref: "#/components/parameters/user-id"
       requestBody:
         content:
           application/json:
