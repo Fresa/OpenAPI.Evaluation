@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Nodes;
 using Json.Pointer;
 using Json.Schema;
@@ -37,46 +36,6 @@ internal sealed class OpenApiEvaluationContext
     {
         return new OpenApiEvaluationContext(_document, reader, Results.AddDetailsFrom(reader), _evaluationOptions);
     }
-
-    internal OpenApiEvaluationContext Evaluate(params PointerSegment[] pointerSegments)
-    {
-        var reader = _reader.Read(pointerSegments);
-        return new OpenApiEvaluationContext(_document, reader, Results.AddDetailsFrom(reader), _evaluationOptions);
-    }
-
-    internal bool TryEvaluate(PointerSegment pointerSegment, [NotNullWhen(true)] out OpenApiEvaluationContext? context)
-    {
-        if (_reader.TryRead(JsonPointer.Create(pointerSegment), out var reader))
-        {
-            var results = Results.AddDetailsFrom(reader);
-            context = new OpenApiEvaluationContext(_document, reader, results, _evaluationOptions);
-            return true;
-        }
-
-        context = null;
-        return false;
-    }
-
-    internal string GetKey() => _reader.Key;
-
-    internal T GetValue<T>(params PointerSegment[] pointerSegments) =>
-        pointerSegments.Any() ? _reader.Read(pointerSegments).GetValue<T>() : _reader.GetValue<T>();
-
-    internal bool TryGetValue<T>(PointerSegment pointerSegment, out T? value)
-    {
-        if (_reader.TryRead(JsonPointer.Create(pointerSegment), out var reader))
-        {
-            value = reader.GetValue<T>();
-            return true;
-        }
-
-        value = default;
-        return false;
-    }
-
-    internal IEnumerable<OpenApiEvaluationContext> EvaluateChildren() =>
-        _reader.ReadChildren().Select(reader =>
-            new OpenApiEvaluationContext(_document, reader, Results.AddDetailsFrom(reader), _evaluationOptions));
     
     internal void EvaluateAgainstSchema(JsonNode? instance)
     {
@@ -115,12 +74,4 @@ internal sealed class OpenApiEvaluationContext
         _resolvedSchema ??= _document.FindSubschema(_reader.RootPath, _evaluationOptions) ??
                             throw new InvalidOperationException(
                                 $"Could not read schema at {_reader.RootPath}, evaluated from {_reader.Trail}");
-
-    internal void EvaluateAsRequired(string name)
-    {
-        Results.Report(
-            new JsonSchemaBuilder()
-                .Required(name)
-                .Evaluate(null, _evaluationOptions));
-    }
 }
