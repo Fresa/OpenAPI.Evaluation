@@ -25,7 +25,9 @@ public sealed class QueryParameter : Parameter
 
     internal Evaluator GetEvaluator(OpenApiEvaluationContext openApiEvaluationContext)
     {
-        return new Evaluator(openApiEvaluationContext.Evaluate(_reader), this);
+        var context = openApiEvaluationContext.Evaluate(_reader);
+        context.Results.SetAnnotations(Annotations);
+        return new Evaluator(context, this);
     }
 
     internal class Evaluator

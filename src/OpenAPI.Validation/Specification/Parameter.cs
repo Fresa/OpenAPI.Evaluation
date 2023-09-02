@@ -1,4 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Nodes;
+using OpenAPI.Evaluation.Collections;
 
 namespace OpenAPI.Evaluation.Specification;
 
@@ -28,18 +30,37 @@ public abstract partial class Parameter
         _reader = reader;
     }
 
-    protected bool? ReadRequired() =>
-        _reader.TryRead(Keys.Required, out var requiredReader) ? requiredReader.GetValue<bool>() : null;
+    protected bool? ReadRequired()
+    {
+        if (!_reader.TryRead(Keys.Required, out var requiredReader))
+            return null;
 
-    protected string ReadName() => _reader.Read(Keys.Name).GetValue<string>();
-    protected string ReadIn() => _reader.Read(Keys.In).GetValue<string>();
+        Annotations.Add(requiredReader);
+        return requiredReader.GetValue<bool>();
+    }
+
+    protected string ReadName()
+    {
+        var nameReader = _reader.Read(Keys.Name);
+        Annotations.Add(nameReader);
+        return nameReader.GetValue<string>();
+    }
+
+    protected string ReadIn()
+    {
+        var inReader = _reader.Read(Keys.In);
+        Annotations.Add(inReader);
+        return inReader.GetValue<string>();
+    }
+
     protected Schema? ReadSchema() => _reader.TryRead(Keys.Schema, out var schemaReader) ? Schema.Parse(schemaReader) : null;
     protected void AssertLocation(string location)
     {
         if (location != In)
             throw new InvalidOperationException($"Parameter is '{location}', but '{Keys.In}' is '{In}'");
     }
-    
+    protected IDictionary<string, JsonNode?> Annotations = new Dictionary<string, JsonNode?>();
+
     internal static bool TryParse(JsonNodeReader reader, [NotNullWhen(true)] out Parameter? parameter)
     {
         var @in = reader.Read(Keys.In).GetValue<string>();

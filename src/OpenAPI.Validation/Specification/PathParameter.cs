@@ -13,8 +13,8 @@ public sealed class PathParameter : Parameter
         Required = ReadRequired() switch
         {
             true => true,
-            false => throw new InvalidOperationException($"'{Keys.Required}' must be true"),
-            null => throw new InvalidOperationException($"'{Keys.Required}' is required")
+            false => throw new ArgumentException($"'{Keys.Required}' must be true"),
+            null => throw new ArgumentException($"'{Keys.Required}' is required")
         };
         Name = ReadName();
         In = ReadIn();
@@ -32,7 +32,9 @@ public sealed class PathParameter : Parameter
 
     internal Evaluator GetEvaluator(OpenApiEvaluationContext openApiEvaluationContext)
     {
-        return new Evaluator(openApiEvaluationContext.Evaluate(_reader), this);
+        var context = openApiEvaluationContext.Evaluate(_reader);
+        context.Results.SetAnnotations(Annotations);
+        return new Evaluator(context, this);
     }
 
     internal class Evaluator

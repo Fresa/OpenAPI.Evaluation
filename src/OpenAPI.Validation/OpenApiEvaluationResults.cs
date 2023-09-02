@@ -78,8 +78,8 @@ public class OpenApiEvaluationResults
 
     internal void SetAnnotations(IDictionary<string, JsonNode?>? annotations)
     {
-        if (_annotations is null ||
-            !_annotations.Any())
+        if (annotations is null ||
+            !annotations.Any())
         {
             return;
         }
