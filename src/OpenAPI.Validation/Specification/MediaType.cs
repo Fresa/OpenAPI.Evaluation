@@ -1,10 +1,12 @@
 using System.Text.Json.Nodes;
+using OpenAPI.Evaluation.Collections;
 
 namespace OpenAPI.Evaluation.Specification;
 
 public sealed partial class MediaType
 {
     private readonly JsonNodeReader _reader;
+    private readonly IDictionary<string, JsonNode?> _annotations = new Dictionary<string, JsonNode?>();
 
     private MediaType(JsonNodeReader reader)
     {
@@ -14,18 +16,28 @@ public sealed partial class MediaType
         {
             Schema = Schema.Parse(schemaReader);
         }
+
+        if (_reader.TryRead("example", out var exampleReader))
+        {
+            _annotations.Add(exampleReader);
+        }
+        if (_reader.TryRead("examples", out var examplesReader))
+        {
+            _annotations.Add(examplesReader);
+        }
     }
 
-    internal static MediaType Parse(JsonNodeReader reader)
-    {
-        return new MediaType(reader);
-    }
+    internal static MediaType Parse(JsonNodeReader reader) => new(reader);
 
     public Schema? Schema { get; }
 
-    internal Evaluator GetEvaluator(OpenApiEvaluationContext openApiEvaluationContext) =>
-        new(openApiEvaluationContext.Evaluate(_reader), this);
-    
+    internal Evaluator GetEvaluator(OpenApiEvaluationContext openApiEvaluationContext)
+    {
+        var context = openApiEvaluationContext.Evaluate(_reader);
+        context.Results.SetAnnotations(_annotations);
+        return new Evaluator(context, this);
+    }
+
     public class Evaluator
     {
         private readonly OpenApiEvaluationContext _openApiEvaluationContext;
