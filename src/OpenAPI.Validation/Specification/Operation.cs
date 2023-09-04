@@ -79,10 +79,8 @@ public sealed partial class Operation
 
         public void EvaluateMissingRequestBody()
         {
-            if (_operation.RequestBody?.IsRequired ?? false)
-            {
-                _openApiEvaluationContext.Results.Fail("Request body is required");
-            }
+            _operation.RequestBody?.GetEvaluator(_openApiEvaluationContext)
+                .EvaluateMissingRequestBody();
         }
 
         public void EvaluateRequestHeaders(HttpRequestHeaders headers)

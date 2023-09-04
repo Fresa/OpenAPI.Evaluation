@@ -1,30 +1,44 @@
 using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Nodes;
+using OpenAPI.Evaluation.Collections;
 using OpenAPI.Evaluation.Http;
 
 namespace OpenAPI.Evaluation.Specification;
 
-public sealed partial class RequestBody
+public sealed class RequestBody
 {
     private readonly JsonNodeReader _reader;
+    private readonly IDictionary<string, JsonNode?> _annotations = new Dictionary<string, JsonNode?>();
 
-    internal RequestBody(JsonNodeReader reader)
+    private RequestBody(JsonNodeReader reader)
     {
         _reader = reader;
-        
+
+        if (_reader.TryRead("description", out var descriptionReader))
+        {
+            _annotations.Add(descriptionReader);
+            Description = descriptionReader.GetValue<string>();
+        }
+
         var contentReader = _reader.Read("content");
         Content = Content.Parse(contentReader);
 
         IsRequired = _reader.TryRead("required", out var requiredReader) && 
                      requiredReader.GetValue<bool>();
     }
-
+    
     internal static RequestBody Parse(JsonNodeReader reader) => new(reader);
 
+    public string? Description { get; }
     public Content Content { get; }
     public bool IsRequired { get; }
 
-    internal Evaluator GetEvaluator(OpenApiEvaluationContext openApiEvaluationContext) =>
-        new(openApiEvaluationContext.Evaluate(_reader), this);
+    internal Evaluator GetEvaluator(OpenApiEvaluationContext openApiEvaluationContext)
+    {
+        var context = openApiEvaluationContext.Evaluate(_reader);
+        context.Results.SetAnnotations(_annotations);
+        return new Evaluator(context, this);
+    }
 
     public class Evaluator
     {
@@ -42,6 +56,14 @@ public sealed partial class RequestBody
         {
             return _requestBody.Content.GetEvaluator(_openApiEvaluationContext)
                 .TryMatch(mediaType, out mediaTypeEvaluator);
+        }
+
+        internal void EvaluateMissingRequestBody()
+        {
+            if (_requestBody.IsRequired)
+            {
+                _openApiEvaluationContext.Results.Fail("Request body is required");
+            }
         }
     }
 }
