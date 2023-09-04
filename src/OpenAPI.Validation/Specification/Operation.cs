@@ -1,5 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Net.Http.Headers;
+using System.Text.Json.Nodes;
+using OpenAPI.Evaluation.Collections;
 using OpenAPI.Evaluation.Http;
 
 namespace OpenAPI.Evaluation.Specification;
@@ -7,6 +9,7 @@ namespace OpenAPI.Evaluation.Specification;
 public sealed partial class Operation
 {
     private readonly JsonNodeReader _reader;
+    private readonly IDictionary<string, JsonNode?> _annotations = new Dictionary<string, JsonNode?>();
 
     private Operation(JsonNodeReader reader)
     {
@@ -28,10 +31,28 @@ public sealed partial class Operation
         {
             Servers = Servers.Parse(serversReader);
         }
+        if (_reader.TryRead("operationId", out var operationIdReader))
+        {
+            OperationId = operationIdReader.GetValue<string>();
+            _annotations.Add(operationIdReader);
+        }
+        if (_reader.TryRead("summary", out var summaryReader))
+        {
+            Summary = summaryReader.GetValue<string>();
+            _annotations.Add(summaryReader);
+        }
+        if (_reader.TryRead("description", out var descriptionReader))
+        {
+            Description = descriptionReader.GetValue<string>();
+            _annotations.Add(descriptionReader);
+        }
     }
 
     internal static Operation Parse(JsonNodeReader reader) => new(reader);
 
+    public string? OperationId { get; }
+    public string? Summary { get; }
+    public string? Description { get; }
     public RequestBody? RequestBody { get; }
     public Parameters? Parameters { get; }
     public Responses? Responses { get; }
@@ -39,11 +60,15 @@ public sealed partial class Operation
 
     internal Evaluator GetEvaluator(OpenApiEvaluationContext openApiEvaluationContext,
         RoutePattern routePattern,
-        Parameters.Evaluator? pathItemParametersEvaluator) =>
-        new(openApiEvaluationContext.Evaluate(_reader), 
-            this, 
+        Parameters.Evaluator? pathItemParametersEvaluator)
+    {
+        var context = openApiEvaluationContext.Evaluate(_reader);
+        context.Results.SetAnnotations(_annotations);
+        return new Evaluator(context,
+            this,
             routePattern,
             pathItemParametersEvaluator);
+    }
 
     public class Evaluator
     {
@@ -52,9 +77,9 @@ public sealed partial class Operation
         private readonly RoutePattern _routePattern;
         private readonly Parameters.Evaluator? _pathItemParametersEvaluator;
 
-        internal Evaluator(OpenApiEvaluationContext openApiEvaluationContext, 
+        internal Evaluator(OpenApiEvaluationContext openApiEvaluationContext,
             Operation operation,
-            RoutePattern routePattern, 
+            RoutePattern routePattern,
             Parameters.Evaluator? pathItemParametersEvaluator)
         {
             _openApiEvaluationContext = openApiEvaluationContext;

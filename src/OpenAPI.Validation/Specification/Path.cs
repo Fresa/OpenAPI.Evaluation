@@ -42,6 +42,17 @@ public sealed partial class Path
         Patch = ReadOperation("patch");
         Trace = ReadOperation("trace");
 
+        var duplicatedOperationIds = Operations.Values
+            .Where(operation => operation.OperationId != null)
+            .GroupBy(operation => operation.OperationId)
+            .Where(grouping => grouping.Count() > 1)
+            .ToList();
+        if (duplicatedOperationIds.Any())
+        {
+            throw new ArgumentException(
+                $"Operations cannot share operation id: {string.Join(", ", duplicatedOperationIds.Select(grouping => grouping.Key))}");
+        }
+
         Operation? ReadOperation(string name)
         {
             if (!reader.TryRead(name, out var operationReader))
@@ -105,9 +116,9 @@ public sealed partial class Path
                             ? _pathItem.Parameters
                             : _pathItem.Parameters.Except(operationObject.Parameters);
                 }
-                
+
                 operationEvaluator = operationObject.GetEvaluator(
-                    _openApiEvaluationContext, 
+                    _openApiEvaluationContext,
                     _routePattern,
                     nonOverriddenPathParameters?.GetEvaluator(_openApiEvaluationContext));
                 return true;
