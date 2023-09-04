@@ -23,6 +23,7 @@ public abstract partial class Parameter
         internal const string Required = "required";
         internal const string In = "in";
         internal const string Schema = "schema";
+        internal const string Description = "description";
     }
 
     private protected Parameter(JsonNodeReader reader)
@@ -51,6 +52,15 @@ public abstract partial class Parameter
         var inReader = _reader.Read(Keys.In);
         Annotations.Add(inReader);
         return inReader.GetValue<string>();
+    }
+
+    protected string? ReadDescription()
+    {
+        if (!_reader.TryRead(Keys.Description, out var descriptionReader))
+            return null;
+
+        Annotations.Add(descriptionReader);
+        return descriptionReader.GetValue<string>();
     }
 
     protected Schema? ReadSchema() => _reader.TryRead(Keys.Schema, out var schemaReader) ? Schema.Parse(schemaReader) : null;
@@ -88,4 +98,5 @@ public abstract partial class Parameter
     public abstract string In { get; protected init; }
     public abstract bool Required { get; protected init; }
     public abstract Schema? Schema { get; protected init; }
+    public abstract string? Description { get; protected init; }
 }

@@ -14,6 +14,7 @@ public sealed class CookieParameter : Parameter
         Name = ReadName();
         In = ReadIn();
         Schema = ReadSchema();
+        Description = ReadDescription();
 
         AssertLocation(Location.Cookie);
     }
@@ -24,6 +25,7 @@ public sealed class CookieParameter : Parameter
     public override string In { get; protected init; }
     public override bool Required { get; protected init; }
     public override Schema? Schema { get; protected init; }
+    public override string? Description { get; protected init; }
 
     internal Evaluator GetEvaluator(OpenApiEvaluationContext openApiEvaluationContext)
     {
