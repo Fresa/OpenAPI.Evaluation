@@ -117,6 +117,7 @@ components:
         $ref: "#/components/schemas/user-id"
   responses:    
     bad-request:
+      description: Bad Request
       content:
         application/json:
           schema:

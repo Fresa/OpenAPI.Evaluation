@@ -1,5 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Net.Http.Headers;
+using System.Text.Json.Nodes;
+using OpenAPI.Evaluation.Collections;
 using OpenAPI.Evaluation.Http;
 
 namespace OpenAPI.Evaluation.Specification;
@@ -7,10 +9,16 @@ namespace OpenAPI.Evaluation.Specification;
 public sealed class Response
 {
     private readonly JsonNodeReader _reader;
+    private readonly IDictionary<string, JsonNode?> _annotations = new Dictionary<string, JsonNode?>();
 
     private Response(JsonNodeReader reader)
     {
         _reader = reader;
+        
+        var descriptionReader = _reader.Read("description");
+        _annotations.Add(descriptionReader);
+        Description = descriptionReader.GetValue<string>();
+
         if (_reader.TryRead("headers", out var headersReader))
         {
             Headers = ResponseHeaders.Parse(headersReader);
@@ -24,12 +32,15 @@ public sealed class Response
 
     internal static Response Parse(JsonNodeReader responsesReader) => new(responsesReader);
 
+    public string Description { get; }
     public ResponseHeaders? Headers { get; }
     public Content? Content { get; }
 
     internal Evaluator GetEvaluator(OpenApiEvaluationContext openApiEvaluationContext)
     {
-        return new Evaluator(openApiEvaluationContext.Evaluate(_reader), this);
+        var context = openApiEvaluationContext.Evaluate(_reader);
+        context.Results.SetAnnotations(_annotations);
+        return new Evaluator(context, this);
     }
 
     internal class Evaluator
