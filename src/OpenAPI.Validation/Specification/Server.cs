@@ -100,16 +100,63 @@ public partial class Server
             _openApiEvaluationContext.Results.Fail($"{uri} does not match server url {_server.Url}");
             return false;
         }
-
-        private static bool MatchValue(string uri, string variableValue, ref int position)
+        
+        private bool MatchUri(Uri uri)
         {
-            var length = variableValue.Length;
+            var uriString = (_server.Url.Contains("://")
+                ? uri.GetLeftPart(UriPartial.Path)
+                : uri.GetPath())
+                .Trim('/');
+
+            var position = 0;
+            foreach (var (segment, isVariableKey) in _server.UrlTemplateSegments)
+            {
+                if (isVariableKey)
+                {
+                    if (MatchServerVariable(uriString, segment, ref position))
+                    {
+                        continue;
+                    }
+                    return false;
+                }
+
+                if (MatchValue(uriString, segment, ref position))
+                {
+                    continue;
+                }
+                return false;
+            }
+
+            return position == uriString.Length;
+        }
+
+        private bool MatchServerVariable(string uri, string variableName, ref int position)
+        {
+            var serverVariable = _server.Variables![variableName];
+            if (serverVariable.Enum == null)
+            {
+                return MatchValue(uri, serverVariable.Default, ref position);
+            }
+
+            foreach (var @enum in serverVariable.Enum)
+            {
+                if (MatchValue(uri, @enum, ref position))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private static bool MatchValue(string uri, string value, ref int position)
+        {
+            var length = value.Length;
             if (uri.Length < position + length)
             {
                 return false;
             }
 
-            if (!uri[position..(position + length)].Equals(variableValue,
+            if (!uri[position..(position + length)].Equals(value,
                     StringComparison.CurrentCultureIgnoreCase))
             {
                 return false;
@@ -117,46 +164,6 @@ public partial class Server
 
             position += length;
             return true;
-        }
-
-        private bool MatchUri(Uri uri)
-        {
-            var uriString = uri.GetLeftPart(UriPartial.Path);
-            if (!_server.Url.Contains("://"))
-            {
-                uriString = uri.GetPath();
-            }
-            uriString = uriString.Trim('/');
-
-            var position = 0;
-            foreach (var (segment, isVariableKey) in _server.UrlTemplateSegments)
-            {
-                if (isVariableKey)
-                {
-                    var serverVariable = _server.Variables![segment];
-                    if (serverVariable.Enum == null)
-                    {
-                        if (!MatchValue(uriString, serverVariable.Default, ref position))
-                        {
-                            return false;
-                        }
-                        continue;
-                    }
-
-                    if (!serverVariable.Enum.Any(@enum => MatchValue(uriString, @enum, ref position)))
-                    {
-                        return false;
-                    }
-                    continue;
-                }
-
-                if (!MatchValue(uriString, segment, ref position))
-                {
-                    return false;
-                }
-            }
-
-            return position == uriString.Length;
         }
     }
 }
