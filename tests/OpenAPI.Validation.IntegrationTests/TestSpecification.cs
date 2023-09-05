@@ -34,7 +34,7 @@ public abstract class TestSpecification : IAsyncLifetime
     protected HttpClient CreateResponseValidatingClient(Specification.OpenAPI document) =>
         new(new OpenApiEvaluationResultWritingHandler(_testOutputHelper,
             new EvaluationHandler(document,
-                new ValidatingOptions
+                new EvaluationOptions
                 {
                     ThrowOnEvaluationFailure = true
                 },

@@ -22,41 +22,40 @@ public sealed class OpenAPI
 
     private OpenAPI(JsonNode document, Uri? baseUri = null)
     {
-        if (baseUri != null && !baseUri.IsAbsoluteUri)
-            throw new ArgumentException("Base uri must be an absolute URI", nameof(baseUri));
-
         _reader = new JsonNodeReader(document, JsonPointer.Empty);
         OpenApi = _reader.Read("openapi").GetValue<string>();
-        EnsureSupportedOpenApiVersion(_reader);
-        var serverUri = GetServerUri(_reader);
+        EnsureSupportedOpenApiVersion();
+        Servers = Servers.Parse(_reader.Read("servers"));
 
-        baseUri ??= serverUri;
+        baseUri ??= new Uri(Servers[0].Url, UriKind.RelativeOrAbsolute);
         if (!baseUri.IsAbsoluteUri)
             throw new ArgumentException("The servers url property in the specification must have an absolute URI when base uri is not explicitly provided", nameof(baseUri));
+
+        Paths = Paths.Parse(_reader.Read("paths"));
 
         _baseDocument = new JsonNodeBaseDocument(document, baseUri);
         Json.Schema.OpenApi.Vocabularies.Register(_evaluationOptions.VocabularyRegistry, _evaluationOptions.SchemaRegistry);
         _evaluationOptions.SchemaRegistry.Register(_baseDocument);
-
-        Servers = Servers.Parse(_reader.Read("servers"));
-        Paths = Paths.Parse(_reader.Read("paths"));
-    }
-    
-    private static Uri GetServerUri(JsonNodeReader reader)
-    {
-        var serverUrlPointer = JsonPointer.Parse("#/servers/0/url");
-        var serverUrl = reader.Read(serverUrlPointer);
-        return new Uri(serverUrl.GetValue<string>(), UriKind.RelativeOrAbsolute);
     }
 
-    private void EnsureSupportedOpenApiVersion(JsonNodeReader reader)
+    private void EnsureSupportedOpenApiVersion()
     {
         SemVer version = OpenApi;
         if (version < _from ||
             version >= _to)
+        {
             throw new InvalidOperationException($"OpenAPI version {OpenApi} is not supported. Supported versions are [{_from}, {_to})");
+        }
     }
 
+    /// <summary>
+    /// Parses an OpenAPI 3.1 specification
+    /// </summary>
+    /// <param name="document">The OpenAPI specification</param>
+    /// <param name="baseUri">The base url of the specification.
+    /// If not specified the first url in the specification's server node will be used.
+    /// Must be an absolute URL</param>
+    /// <returns>The parsed OpenAPI specification</returns>
     public static OpenAPI Parse(JsonNode document, Uri? baseUri = null) => new(document, baseUri);
 
     public string OpenApi { get; }

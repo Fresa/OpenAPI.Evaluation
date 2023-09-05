@@ -8,11 +8,11 @@ namespace OpenAPI.Evaluation.Client;
 public class EvaluationHandler : DelegatingHandler
 {
     private readonly Specification.OpenAPI _openApi;
-    private readonly ValidatingOptions _options;
+    private readonly EvaluationOptions _options;
 
     public EvaluationHandler(
         Specification.OpenAPI openApi,
-        ValidatingOptions options,
+        EvaluationOptions options,
         HttpMessageHandler inner) : base(inner)
     {
         _openApi = openApi;
