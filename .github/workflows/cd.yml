@@ -8,6 +8,7 @@ on:
 env:
   project_path: src/OpenAPI.Evaluation
   project_name: OpenAPI.Evaluation
+  package_id: Evaluation.OpenAPI
 
 jobs:
   test:
@@ -115,6 +116,6 @@ jobs:
           description: ${{ steps.release-tag.outputs.tag }}
       - name: Publish to nuget.org
         run: |
-          dotnet nuget push nuget-packages/${{ env.project_name }}.${{ steps.release-tag.outputs.version }}.nupkg \
+          dotnet nuget push nuget-packages/${{ env.package_id }}.${{ steps.release-tag.outputs.version }}.nupkg \
             --api-key ${{ secrets.NUGET_API_KEY }} \
             --source https://api.nuget.org/v3/index.json
