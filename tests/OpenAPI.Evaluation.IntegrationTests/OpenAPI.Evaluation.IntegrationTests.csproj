@@ -25,7 +25,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\OpenAPI.Validation\OpenAPI.Evaluation.csproj" />
+    <ProjectReference Include="..\..\src\OpenAPI.Evaluation\OpenAPI.Evaluation.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -35,10 +35,6 @@
     <None Update="test-api.yaml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="OpenApi\" />
   </ItemGroup>
 
 </Project>

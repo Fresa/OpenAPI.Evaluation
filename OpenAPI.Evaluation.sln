@@ -3,17 +3,17 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.5.33516.290
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OpenAPI.Evaluation", "src\OpenAPI.Validation\OpenAPI.Evaluation.csproj", "{6175CB77-7730-4BD2-BBE1-F90E99C79546}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OpenAPI.Evaluation.IntegrationTests", "tests\OpenAPI.Validation.IntegrationTests\OpenAPI.Evaluation.IntegrationTests.csproj", "{7D5C97F9-A748-4A5C-B01C-A74DA64C194D}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OpenAPI.Evaluation.UnitTests", "tests\OpenAPI.Evaluation.UnitTests\OpenAPI.Evaluation.UnitTests.csproj", "{6F94A1E7-435F-47D1-ACB4-2B8AC1ED1AFF}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{5D0AB894-1529-46CB-ADFD-DB7B5B751565}"
 	ProjectSection(SolutionItems) = preProject
-		README.md = README.md
 		.github\workflows\cd.yml = .github\workflows\cd.yml
+		README.md = README.md
 	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OpenAPI.Evaluation", "src\OpenAPI.Evaluation\OpenAPI.Evaluation.csproj", "{F680B991-63BC-456E-81A8-7D714BBE0655}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OpenAPI.Evaluation.IntegrationTests", "tests\OpenAPI.Evaluation.IntegrationTests\OpenAPI.Evaluation.IntegrationTests.csproj", "{A26941AA-EDBE-4210-B5DB-1BE4D63D76C4}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,18 +21,18 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{6175CB77-7730-4BD2-BBE1-F90E99C79546}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{6175CB77-7730-4BD2-BBE1-F90E99C79546}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{6175CB77-7730-4BD2-BBE1-F90E99C79546}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{6175CB77-7730-4BD2-BBE1-F90E99C79546}.Release|Any CPU.Build.0 = Release|Any CPU
-		{7D5C97F9-A748-4A5C-B01C-A74DA64C194D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{7D5C97F9-A748-4A5C-B01C-A74DA64C194D}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{7D5C97F9-A748-4A5C-B01C-A74DA64C194D}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{7D5C97F9-A748-4A5C-B01C-A74DA64C194D}.Release|Any CPU.Build.0 = Release|Any CPU
 		{6F94A1E7-435F-47D1-ACB4-2B8AC1ED1AFF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{6F94A1E7-435F-47D1-ACB4-2B8AC1ED1AFF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6F94A1E7-435F-47D1-ACB4-2B8AC1ED1AFF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6F94A1E7-435F-47D1-ACB4-2B8AC1ED1AFF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F680B991-63BC-456E-81A8-7D714BBE0655}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F680B991-63BC-456E-81A8-7D714BBE0655}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F680B991-63BC-456E-81A8-7D714BBE0655}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F680B991-63BC-456E-81A8-7D714BBE0655}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A26941AA-EDBE-4210-B5DB-1BE4D63D76C4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A26941AA-EDBE-4210-B5DB-1BE4D63D76C4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A26941AA-EDBE-4210-B5DB-1BE4D63D76C4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A26941AA-EDBE-4210-B5DB-1BE4D63D76C4}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
