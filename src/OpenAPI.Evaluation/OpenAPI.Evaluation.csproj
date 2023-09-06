@@ -9,18 +9,21 @@
 		<PackageReleaseNotes>$([System.IO.File]::ReadAllText('$(MSBuildStartupDirectory)/release_notes.txt'))</PackageReleaseNotes>
 		<IncludeSymbols>true</IncludeSymbols>
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
+		<PackageId>Evaluation.OpenAPI</PackageId>
 		<PackageVersion></PackageVersion>
 		<Authors>Fredrik Arvidsson</Authors>
 		<Company>FKAN Consulting AB</Company>
 		<PackageTags>OpenAPI evaluation</PackageTags>
-		<Description>OpenAPI evaluation</Description>
+		<Description>Evaluates API requests and responses using OpenAPI specifications</Description>
 		<RepositoryUrl>https://github.com/Fresa/OpenAPI.Evaluation</RepositoryUrl>
-		<PackageLicenseUrl>https://github.com/Fresa/OpenAPI.Evaluation/blob/master/LICENSE</PackageLicenseUrl>
+		<PackageLicenseFile>LICENSE</PackageLicenseFile >
 		<Copyright>Copyright © 2023 Fredrik Arvidsson</Copyright>
 		<AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
 		<GenerateDocumentationFile>True</GenerateDocumentationFile>
+		<PackageLicenseFile>LICENSE</PackageLicenseFile >
+		<PackageReadmeFile>README.md</PackageReadmeFile>
 	</PropertyGroup>
-	
+
 	<ItemGroup>
 		<PackageReference Include="JsonSchema.Net" Version="[5.0.0,6.0)" />
 		<PackageReference Include="JsonSchema.Net.OpenApi" Version="[2.0.0,3.0]" />
@@ -28,6 +31,8 @@
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
+		<None Include="..\..\README.md" Pack="true" PackagePath="\" />
+		<None Include="..\..\LICENSE" Pack="true" PackagePath="\" />
 	</ItemGroup>
 
 	<ItemGroup>
