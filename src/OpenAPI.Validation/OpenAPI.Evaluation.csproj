@@ -4,11 +4,30 @@
 		<TargetFramework>net7.0</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
+		<WarningsAsErrors>CS8600;CS8601;CS8603;CS8614;CS8618;CS8625</WarningsAsErrors>
+		<PublishRepositoryUrl>true</PublishRepositoryUrl>
+		<PackageReleaseNotes>$([System.IO.File]::ReadAllText('$(MSBuildStartupDirectory)/release_notes.txt'))</PackageReleaseNotes>
+		<IncludeSymbols>true</IncludeSymbols>
+		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
+		<PackageVersion></PackageVersion>
+		<Authors>Fredrik Arvidsson</Authors>
+		<Company>FKAN Consulting AB</Company>
+		<PackageTags>OpenAPI evaluation</PackageTags>
+		<Description>OpenAPI evaluation</Description>
+		<RepositoryUrl>https://github.com/Fresa/OpenAPI.Evaluation</RepositoryUrl>
+		<PackageLicenseUrl>https://github.com/Fresa/OpenAPI.Evaluation/blob/master/LICENSE</PackageLicenseUrl>
+		<Copyright>Copyright © 2023 Fredrik Arvidsson</Copyright>
+		<AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
+		<GenerateDocumentationFile>True</GenerateDocumentationFile>
 	</PropertyGroup>
-
+	
 	<ItemGroup>
-		<PackageReference Include="JsonSchema.Net" Version="5.1.0" />
-		<PackageReference Include="JsonSchema.Net.OpenApi" Version="2.0.0" />
+		<PackageReference Include="JsonSchema.Net" Version="[5.0.0,6.0)" />
+		<PackageReference Include="JsonSchema.Net.OpenApi" Version="[2.0.0,3.0]" />
+		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
 	</ItemGroup>
 
 	<ItemGroup>

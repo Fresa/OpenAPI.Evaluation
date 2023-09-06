@@ -32,7 +32,7 @@ public class EvaluationHandler : DelegatingHandler
         Operation.Evaluator? operationEvaluator = null;
         OpenApiEvaluationResults? evaluationResults = null;
 
-        if (_options.ValidateRequest)
+        if (_options.EvaluateRequests)
         {
             var requestUri = request.RequestUri ??
                              throw new ArgumentNullException($"{nameof(request)}.{nameof(request.RequestUri)}",
@@ -71,7 +71,7 @@ public class EvaluationHandler : DelegatingHandler
         }
 
         var response = base.Send(request, cancellationToken);
-        if (!_options.ValidateResponse)
+        if (!_options.EvaluateResponses)
             return response;
 
         if ((operationEvaluator == null || evaluationResults == null) &&
@@ -115,7 +115,7 @@ public class EvaluationHandler : DelegatingHandler
         Operation.Evaluator? operationEvaluator = null;
         OpenApiEvaluationResults? evaluationResults = null;
 
-        if (_options.ValidateRequest)
+        if (_options.EvaluateRequests)
         {
             var requestUri = request.RequestUri ??
                              throw new ArgumentNullException($"{nameof(request)}.{nameof(request.RequestUri)}",
@@ -156,7 +156,7 @@ public class EvaluationHandler : DelegatingHandler
 
         var response = await base.SendAsync(request, cancellationToken)
             .ConfigureAwait(false);
-        if (!_options.ValidateResponse)
+        if (!_options.EvaluateResponses)
             return response;
 
         if ((operationEvaluator == null || evaluationResults == null) &&

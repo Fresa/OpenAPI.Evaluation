@@ -7,7 +7,13 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OpenAPI.Evaluation", "src\O
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OpenAPI.Evaluation.IntegrationTests", "tests\OpenAPI.Validation.IntegrationTests\OpenAPI.Evaluation.IntegrationTests.csproj", "{7D5C97F9-A748-4A5C-B01C-A74DA64C194D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenAPI.Evaluation.UnitTests", "tests\OpenAPI.Evaluation.UnitTests\OpenAPI.Evaluation.UnitTests.csproj", "{6F94A1E7-435F-47D1-ACB4-2B8AC1ED1AFF}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OpenAPI.Evaluation.UnitTests", "tests\OpenAPI.Evaluation.UnitTests\OpenAPI.Evaluation.UnitTests.csproj", "{6F94A1E7-435F-47D1-ACB4-2B8AC1ED1AFF}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{5D0AB894-1529-46CB-ADFD-DB7B5B751565}"
+	ProjectSection(SolutionItems) = preProject
+		README.md = README.md
+		.github\workflows\cd.yml = .github\workflows\cd.yml
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
