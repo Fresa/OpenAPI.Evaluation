@@ -9,18 +9,15 @@ public sealed class PathParameter : Parameter
     private PathParameter(JsonNodeReader reader) : base(reader)
     {
         _reader = reader;
-        
+        Name = ReadName();
+        In = ReadIn();
         Required = ReadRequired() switch
         {
             true => true,
             false => throw new ArgumentException($"'{Keys.Required}' must be true"),
             null => throw new ArgumentException($"'{Keys.Required}' is required")
         };
-        Name = ReadName();
-        In = ReadIn();
-        Schema = ReadSchema();
-        Description = ReadDescription();
-
+        
         AssertLocation(Location.Path);
     }
 
@@ -29,9 +26,7 @@ public sealed class PathParameter : Parameter
     public override string Name { get; protected init; }
     public override string In { get; protected init; }
     public override bool Required { get; protected init; }
-    public override Schema? Schema { get; protected init; }
-    public override string? Description { get; protected init; }
-
+    
     internal Evaluator GetEvaluator(OpenApiEvaluationContext openApiEvaluationContext)
     {
         var context = openApiEvaluationContext.Evaluate(_reader);

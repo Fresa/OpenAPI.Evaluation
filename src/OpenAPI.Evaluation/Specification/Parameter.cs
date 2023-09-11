@@ -24,11 +24,16 @@ public abstract partial class Parameter
         internal const string In = "in";
         internal const string Schema = "schema";
         internal const string Description = "description";
+        internal const string Content = "content";
     }
 
     private protected Parameter(JsonNodeReader reader)
     {
         _reader = reader;
+        Description = ReadDescription();
+        Content = ReadContent();
+        Schema = ReadSchema();
+        AssertSchemaOrContent();
     }
 
     protected bool? ReadRequired()
@@ -54,7 +59,7 @@ public abstract partial class Parameter
         return inReader.GetValue<string>();
     }
 
-    protected string? ReadDescription()
+    private string? ReadDescription()
     {
         if (!_reader.TryRead(Keys.Description, out var descriptionReader))
             return null;
@@ -63,13 +68,22 @@ public abstract partial class Parameter
         return descriptionReader.GetValue<string>();
     }
 
-    protected Schema? ReadSchema() => _reader.TryRead(Keys.Schema, out var schemaReader) ? Schema.Parse(schemaReader) : null;
+    private Schema? ReadSchema() => _reader.TryRead(Keys.Schema, out var schemaReader) ? Schema.Parse(schemaReader) : null;
+    private Content? ReadContent() => _reader.TryRead(Keys.Content, out var contentReader) ? Content.Parse(contentReader) : null;
     protected void AssertLocation(string location)
     {
         if (location != In)
             throw new InvalidOperationException($"Parameter is '{location}', but '{Keys.In}' is '{In}'");
     }
-    protected IDictionary<string, JsonNode?> Annotations = new Dictionary<string, JsonNode?>();
+    private void AssertSchemaOrContent()
+    {
+        if (Schema != null && Content != null)
+            throw new InvalidOperationException($"Parameters '{Keys.Schema}' and '{Keys.Content}' cannot both be defined");
+        if (Schema == null && Content == null)
+            throw new InvalidOperationException($"One of parameters '{Keys.Schema}' or '{Keys.Content}' must be defined");
+    }
+
+    protected readonly IDictionary<string, JsonNode?> Annotations = new Dictionary<string, JsonNode?>();
 
     internal static bool TryParse(JsonNodeReader reader, [NotNullWhen(true)] out Parameter? parameter)
     {
@@ -97,6 +111,7 @@ public abstract partial class Parameter
     public abstract string Name { get; protected init; }
     public abstract string In { get; protected init; }
     public abstract bool Required { get; protected init; }
-    public abstract Schema? Schema { get; protected init; }
-    public abstract string? Description { get; protected init; }
+    public Schema? Schema { get; private init; }
+    public string? Description { get; private init; }
+    public Content? Content { get; private init; }
 }

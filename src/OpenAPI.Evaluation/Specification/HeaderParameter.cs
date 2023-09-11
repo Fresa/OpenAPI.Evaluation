@@ -10,22 +10,18 @@ public sealed class HeaderParameter : Parameter
     private HeaderParameter(JsonNodeReader reader) : base(reader)
     {
         _reader = reader;
-        Required = ReadRequired() ?? false;
         Name = ReadName();
         In = ReadIn();
-        Schema = ReadSchema();
-        Description = ReadDescription();
-
+        Required = ReadRequired() ?? false;
         AssertLocation(Location.Header);
     }
 
     private HeaderParameter(JsonNodeReader reader, string name) : base(reader)
     {
         _reader = reader;
-        Required = ReadRequired() ?? false;
         Name = name;
         In = Location.Header;
-        Schema = ReadSchema();
+        Required = ReadRequired() ?? false;
     }
 
     private static readonly string[] IgnoredRequestHeaders = { "Accept", "Content-Type", "Authorization" };
@@ -51,9 +47,7 @@ public sealed class HeaderParameter : Parameter
     public override string Name { get; protected init; }
     public override string In { get; protected init; }
     public override bool Required { get; protected init; }
-    public override Schema? Schema { get; protected init; }
-    public override string? Description { get; protected init; }
-
+    
     internal Evaluator GetEvaluator(OpenApiEvaluationContext openApiEvaluationContext)
     {
         var context = openApiEvaluationContext.Evaluate(_reader);

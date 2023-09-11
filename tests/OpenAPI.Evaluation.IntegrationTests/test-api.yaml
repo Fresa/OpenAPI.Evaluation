@@ -159,11 +159,7 @@ components:
   responses:    
     bad-request:
       description: The request is invalid
-      headers:
-        traceparent:
-          $ref: "#/components/headers/traceparent"
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/open-api-evaluation-results"
-    
