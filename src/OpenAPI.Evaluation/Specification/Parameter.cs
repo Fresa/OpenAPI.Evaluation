@@ -37,6 +37,7 @@ public abstract class Parameter
         internal const string Content = "content";
         internal const string Style = "style";
         internal const string Deprecated = "deprecated";
+        internal const string Explode = "explode";
     }
 
     private protected Parameter(JsonNodeReader reader)
@@ -48,6 +49,7 @@ public abstract class Parameter
         AssertSchemaOrContent();
         Style = ReadStyle();
         Deprecated = ReadDeprecated();
+        Explode = ReadExplode();
     }
 
     protected bool? ReadRequired()
@@ -122,6 +124,14 @@ public abstract class Parameter
         Annotations.Add(deprecatedReader);
         return deprecatedReader.GetValue<bool>();
     }
+    private bool ReadExplode()
+    {
+        if (!_reader.TryRead(Keys.Explode, out var explodeReader))
+            return Style == Styles.Form;
+
+        Annotations.Add(explodeReader);
+        return explodeReader.GetValue<bool>();
+    }
 
     protected readonly IDictionary<string, JsonNode?> Annotations = new Dictionary<string, JsonNode?>();
 
@@ -156,4 +166,5 @@ public abstract class Parameter
     public Content? Content { get; private init; }
     public string? Style { get; private init; }
     public bool Deprecated { get; private init; }
+    public bool Explode { get; protected init; }
 }
