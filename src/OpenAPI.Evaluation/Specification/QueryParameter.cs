@@ -1,5 +1,6 @@
 using System.Collections.Specialized;
 using System.Text.Json.Nodes;
+using OpenAPI.Evaluation.Collections;
 using OpenAPI.Evaluation.Http;
 
 namespace OpenAPI.Evaluation.Specification;
@@ -17,13 +18,20 @@ public sealed class QueryParameter : Parameter
         
         AssertLocation(Location.Query);
         AssertStyle(Styles.Form, Styles.SpaceDelimited, Styles.PipeDelimited, Styles.DeepObject);
+
+        if (reader.TryRead("allowEmptyValue", out var allowEmptyValueReader))
+        {
+            AllowEmptyValue = allowEmptyValueReader.GetValue<bool>();
+            Annotations.Add(allowEmptyValueReader);
+        }
     }
 
     internal static QueryParameter Parse(JsonNodeReader reader) => new(reader);
     public override string Name { get; protected init; }
     public override string In { get; protected init; }
     public override bool Required { get; protected init; }
-    
+    public bool AllowEmptyValue { get; private init; }
+
     internal Evaluator GetEvaluator(OpenApiEvaluationContext openApiEvaluationContext)
     {
         var context = openApiEvaluationContext.Evaluate(_reader);
