@@ -36,6 +36,7 @@ public abstract class Parameter
         internal const string Description = "description";
         internal const string Content = "content";
         internal const string Style = "style";
+        internal const string Deprecated = "deprecated";
     }
 
     private protected Parameter(JsonNodeReader reader)
@@ -46,6 +47,7 @@ public abstract class Parameter
         Schema = ReadSchema();
         AssertSchemaOrContent();
         Style = ReadStyle();
+        Deprecated = ReadDeprecated();
     }
 
     protected bool? ReadRequired()
@@ -112,6 +114,14 @@ public abstract class Parameter
         if (!validStyles.Contains(Style))
             throw new InvalidOperationException($"Style '{Style}' is not valid for parameter location '{In}', valid styles are: {string.Join(", ", validStyles)}");
     }
+    private bool ReadDeprecated()
+    {
+        if (!_reader.TryRead(Keys.Deprecated, out var deprecatedReader))
+            return false;
+
+        Annotations.Add(deprecatedReader);
+        return deprecatedReader.GetValue<bool>();
+    }
 
     protected readonly IDictionary<string, JsonNode?> Annotations = new Dictionary<string, JsonNode?>();
 
@@ -145,4 +155,5 @@ public abstract class Parameter
     public string? Description { get; private init; }
     public Content? Content { get; private init; }
     public string? Style { get; private init; }
+    public bool Deprecated { get; private init; }
 }

@@ -19,11 +19,15 @@ public sealed class QueryParameter : Parameter
         AssertLocation(Location.Query);
         AssertStyle(Styles.Form, Styles.SpaceDelimited, Styles.PipeDelimited, Styles.DeepObject);
 
-        if (reader.TryRead("allowEmptyValue", out var allowEmptyValueReader))
-        {
-            AllowEmptyValue = allowEmptyValueReader.GetValue<bool>();
-            Annotations.Add(allowEmptyValueReader);
-        }
+        AllowEmptyValue = ReadAllowEmptyValue();
+    }
+    private bool ReadAllowEmptyValue()
+    {
+        if (!_reader.TryRead("allowEmptyValue", out var allowEmptyValueReader))
+            return false;
+
+        Annotations.Add(allowEmptyValueReader);
+        return allowEmptyValueReader.GetValue<bool>();
     }
 
     internal static QueryParameter Parse(JsonNodeReader reader) => new(reader);
