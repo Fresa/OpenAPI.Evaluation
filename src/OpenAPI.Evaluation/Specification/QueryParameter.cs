@@ -20,6 +20,7 @@ public sealed class QueryParameter : Parameter
         AssertStyle(Styles.Form, Styles.SpaceDelimited, Styles.PipeDelimited, Styles.DeepObject);
 
         AllowEmptyValue = ReadAllowEmptyValue();
+        AllowReserved = ReadAllowReserved();
     }
     private bool ReadAllowEmptyValue()
     {
@@ -29,12 +30,21 @@ public sealed class QueryParameter : Parameter
         Annotations.Add(allowEmptyValueReader);
         return allowEmptyValueReader.GetValue<bool>();
     }
+    private bool ReadAllowReserved()
+    {
+        if (!_reader.TryRead("allowReserved", out var allowReservedReader))
+            return false;
+
+        Annotations.Add(allowReservedReader);
+        return allowReservedReader.GetValue<bool>();
+    }
 
     internal static QueryParameter Parse(JsonNodeReader reader) => new(reader);
     public override string Name { get; protected init; }
     public override string In { get; protected init; }
     public override bool Required { get; protected init; }
     public bool AllowEmptyValue { get; private init; }
+    public bool AllowReserved { get; private init; }
 
     internal Evaluator GetEvaluator(OpenApiEvaluationContext openApiEvaluationContext)
     {
