@@ -6,7 +6,7 @@ using OpenAPI.Evaluation.UnitTests.Json;
 
 namespace OpenAPI.Evaluation.UnitTests.Specification.Parameters;
 
-public class HeaderTests
+public class HeaderParsingTests
 {
     [Theory]
     [InlineData("""
