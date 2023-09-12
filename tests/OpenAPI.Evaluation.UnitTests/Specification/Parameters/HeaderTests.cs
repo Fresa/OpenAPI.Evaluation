@@ -51,21 +51,32 @@ public class HeaderTests
     [InlineData("""
         {
             "in": "header",
-            "name": "Accept"
+            "name": "Accept",
+            "schema": {
+              "type": "string"
+            }            
+        
         }
-        """, true, false)]
+        """, false, false)]
     [InlineData("""
         {
             "in": "header",
-            "name": "Content-Type"
+            "name": "Content-Type",
+            "schema": {
+              "type": "string"
+            }            
+        
         }
-        """, true, false)]
+        """, false, false)]
     [InlineData("""
         {
             "in": "header",
-            "name": "Authorization"
+            "name": "Authorization",
+            "schema": {
+              "type": "string"
+            }            
         }
-        """, true, false)]
+        """, false, false)]
     public void Given_a_header_parameter_When_parsing_It_should_be_parsed_according_to_spec(
         string json,
         bool shouldThrow,

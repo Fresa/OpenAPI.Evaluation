@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text.Json.Nodes;
+using OpenAPI.Evaluation.Http;
 
 namespace OpenAPI.Evaluation.Specification;
 
@@ -53,8 +54,15 @@ public sealed class CookieParameter : Parameter
                 return;
             }
 
-            var cookieValue = JsonValue.Create(cookie.Value);
-            _parameter.Schema?.GetEvaluator(_openApiEvaluationContext).Evaluate(cookieValue);
+            _parameter.Schema?.GetEvaluator(_openApiEvaluationContext).Evaluate(JsonValue.Create(cookie.Value));
+
+            if (_parameter.Content != null &&
+                _parameter.Content.GetEvaluator(_openApiEvaluationContext)
+                    .TryMatch(MediaTypeValue.ApplicationJson, out var contentEvaluator))
+            {
+                var node = JsonNode.Parse(cookie.Value);
+                contentEvaluator.Evaluate(node);
+            }
         }
     }
 }

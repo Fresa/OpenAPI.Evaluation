@@ -84,10 +84,6 @@ public sealed partial class Parameters : IEnumerable<Parameter>
         internal void EvaluateQuery(Uri uri)
         {
             var querystring = uri.Query;
-            if (string.IsNullOrEmpty(querystring))
-            {
-                return;
-            }
             var queryParameters = System.Web.HttpUtility.ParseQueryString(querystring);
 
             foreach (var parameter in _parameters.OfType<QueryParameter>())
@@ -100,7 +96,7 @@ public sealed partial class Parameters : IEnumerable<Parameter>
         {
             if (!requestHeaders.TryGetValues("Cookie", out var cookieValueList))
             {
-                return;
+                cookieValueList = new List<string>();
             }
 
             var cookieContainer = new CookieContainer();

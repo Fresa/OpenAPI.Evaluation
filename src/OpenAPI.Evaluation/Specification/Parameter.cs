@@ -82,7 +82,7 @@ public abstract partial class Parameter
         if (Schema == null && Content == null)
             throw new InvalidOperationException($"One of parameters '{Keys.Schema}' or '{Keys.Content}' must be defined");
         if (Content != null && Content.Count != 1) 
-            throw new InvalidOperationException($"There can only be one media type defined in '{Keys.Content}'");
+            throw new InvalidOperationException($"There must be exactly one media type defined in '{Keys.Content}'");
     }
 
     protected readonly IDictionary<string, JsonNode?> Annotations = new Dictionary<string, JsonNode?>();

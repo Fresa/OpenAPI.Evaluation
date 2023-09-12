@@ -1,3 +1,4 @@
+using OpenAPI.Evaluation.Http;
 using System.Text.Json.Nodes;
 
 namespace OpenAPI.Evaluation.Specification;
@@ -57,6 +58,14 @@ public sealed class PathParameter : Parameter
             }
 
             _parameter.Schema?.GetEvaluator(_openApiEvaluationContext).Evaluate(JsonValue.Create(value));
+
+            if (_parameter.Content != null &&
+                _parameter.Content.GetEvaluator(_openApiEvaluationContext)
+                    .TryMatch(MediaTypeValue.ApplicationJson, out var contentEvaluator))
+            {
+                var node = JsonNode.Parse(value);
+                contentEvaluator.Evaluate(node);
+            }
         }
     }
 }

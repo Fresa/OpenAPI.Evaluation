@@ -57,7 +57,7 @@ public class EvaluationHandler : DelegatingHandler
                 }
 
                 var requestContent = ReadContent(request.Content, cancellationToken);
-                requestMediaTypeEvaluator.EvaluateBody(requestContent);
+                requestMediaTypeEvaluator.Evaluate(requestContent);
             }
             else
             {
@@ -96,7 +96,7 @@ public class EvaluationHandler : DelegatingHandler
         }
 
         var responseContent = ReadContent(response.Content, cancellationToken);
-        responseMediaTypeEvaluator.EvaluateBody(responseContent);
+        responseMediaTypeEvaluator.Evaluate(responseContent);
         responseEvaluator.EvaluateHeaders(response.Headers);
 
         return CreateEvaluationResponseMessage(response, evaluationResults);
@@ -141,7 +141,7 @@ public class EvaluationHandler : DelegatingHandler
 
                 var requestContent = await ReadContentAsync(request.Content, cancellationToken)
                     .ConfigureAwait(false);
-                requestMediaTypeEvaluator.EvaluateBody(requestContent);
+                requestMediaTypeEvaluator.Evaluate(requestContent);
             }
             else
             {
@@ -182,7 +182,7 @@ public class EvaluationHandler : DelegatingHandler
 
         var responseContent = await ReadContentAsync(response.Content, cancellationToken)
             .ConfigureAwait(false);
-        responseMediaTypeEvaluator.EvaluateBody(responseContent);
+        responseMediaTypeEvaluator.Evaluate(responseContent);
         responseEvaluator.EvaluateHeaders(response.Headers);
 
         return CreateEvaluationResponseMessage(response, evaluationResults);

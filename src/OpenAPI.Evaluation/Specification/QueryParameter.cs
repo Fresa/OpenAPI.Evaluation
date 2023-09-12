@@ -1,4 +1,6 @@
 using System.Collections.Specialized;
+using System.Text.Json.Nodes;
+using OpenAPI.Evaluation.Http;
 
 namespace OpenAPI.Evaluation.Specification;
 
@@ -28,7 +30,7 @@ public sealed class QueryParameter : Parameter
         return new Evaluator(context, this);
     }
 
-    internal class Evaluator
+    internal sealed class Evaluator
     {
         private readonly OpenApiEvaluationContext _openApiEvaluationContext;
         private readonly QueryParameter _parameter;
@@ -42,7 +44,7 @@ public sealed class QueryParameter : Parameter
         internal void Evaluate(NameValueCollection queryParameters)
         {
             var stringValues = queryParameters.GetValues(_parameter.Name);
-            if (stringValues == null)
+            if (stringValues == null || !stringValues.Any())
             {
                 if (_parameter.Required)
                 {
@@ -52,6 +54,14 @@ public sealed class QueryParameter : Parameter
             }
 
             _parameter.Schema?.GetEvaluator(_openApiEvaluationContext).Evaluate(stringValues);
+
+            if (_parameter.Content != null &&
+                _parameter.Content.GetEvaluator(_openApiEvaluationContext)
+                    .TryMatch(MediaTypeValue.ApplicationJson, out var contentEvaluator))
+            {
+                var node = JsonNode.Parse(stringValues.First());
+                contentEvaluator.Evaluate(node);
+            }
         }
     }
 }

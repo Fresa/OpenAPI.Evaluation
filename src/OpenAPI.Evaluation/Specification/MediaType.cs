@@ -49,7 +49,7 @@ public sealed partial class MediaType
             _mediaType = mediaType;
         }
 
-        public void EvaluateBody(JsonNode? body)
+        public void Evaluate(JsonNode? body)
         {
             _mediaType.Schema?
                 .GetEvaluator(_openApiEvaluationContext)

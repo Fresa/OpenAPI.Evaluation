@@ -1,5 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Net.Http.Headers;
+using System.Text.Json.Nodes;
+using OpenAPI.Evaluation.Http;
 
 namespace OpenAPI.Evaluation.Specification;
 
@@ -77,7 +79,16 @@ public sealed class HeaderParameter : Parameter
                 return;
             }
 
-            _parameter.Schema?.GetEvaluator(_openApiEvaluationContext).Evaluate(stringValues);
+            var headerValues = stringValues.ToList();
+            _parameter.Schema?.GetEvaluator(_openApiEvaluationContext).Evaluate(headerValues);
+
+            if (_parameter.Content != null &&
+                _parameter.Content.GetEvaluator(_openApiEvaluationContext)
+                    .TryMatch(MediaTypeValue.ApplicationJson, out var contentEvaluator))
+            {
+                var node = JsonNode.Parse(headerValues.First());
+                contentEvaluator.Evaluate(node);
+            }
         }
     }
 }
