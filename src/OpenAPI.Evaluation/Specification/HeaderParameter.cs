@@ -16,6 +16,7 @@ public sealed class HeaderParameter : Parameter
         In = ReadIn();
         Required = ReadRequired() ?? false;
         AssertLocation(Location.Header);
+        AssertStyle(Styles.Simple);
     }
 
     private HeaderParameter(JsonNodeReader reader, string name) : base(reader)

@@ -16,6 +16,7 @@ public sealed class CookieParameter : Parameter
         Required = ReadRequired() ?? false;
 
         AssertLocation(Location.Cookie);
+        AssertStyle(Styles.Form);
     }
 
     internal static CookieParameter Parse(JsonNodeReader reader) => new(reader);

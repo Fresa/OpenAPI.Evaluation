@@ -20,6 +20,7 @@ public sealed class PathParameter : Parameter
         };
         
         AssertLocation(Location.Path);
+        AssertStyle(Styles.Matrix, Styles.Label, Styles.Simple);
     }
 
     internal static PathParameter Parse(JsonNodeReader reader) => new(reader);

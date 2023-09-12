@@ -16,6 +16,7 @@ public sealed class QueryParameter : Parameter
         Required = ReadRequired() ?? false;
         
         AssertLocation(Location.Query);
+        AssertStyle(Styles.Form, Styles.SpaceDelimited, Styles.PipeDelimited, Styles.DeepObject);
     }
 
     internal static QueryParameter Parse(JsonNodeReader reader) => new(reader);

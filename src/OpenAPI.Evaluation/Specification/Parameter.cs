@@ -4,7 +4,7 @@ using OpenAPI.Evaluation.Collections;
 
 namespace OpenAPI.Evaluation.Specification;
 
-public abstract partial class Parameter
+public abstract class Parameter
 {
     private readonly JsonNodeReader _reader;
 
@@ -16,7 +16,17 @@ public abstract partial class Parameter
         public const string Cookie = "cookie";
         public static readonly string[] All = { Header, Path, Query, Cookie };
     }
-
+    protected static class Styles
+    {
+        public const string Matrix = "matrix";
+        public const string Label = "label";
+        public const string Form = "form";
+        public const string Simple = "simple";
+        public const string SpaceDelimited = "spaceDelimited";
+        public const string PipeDelimited = "pipeDelimited";
+        public const string DeepObject = "deepObject";
+        public static readonly string[] All = { Matrix, Label, Form, Simple, SpaceDelimited, PipeDelimited, DeepObject };
+    }
     protected static class Keys
     {
         internal const string Name = "name";
@@ -25,6 +35,7 @@ public abstract partial class Parameter
         internal const string Schema = "schema";
         internal const string Description = "description";
         internal const string Content = "content";
+        internal const string Style = "style";
     }
 
     private protected Parameter(JsonNodeReader reader)
@@ -34,6 +45,7 @@ public abstract partial class Parameter
         Content = ReadContent();
         Schema = ReadSchema();
         AssertSchemaOrContent();
+        Style = ReadStyle();
     }
 
     protected bool? ReadRequired()
@@ -85,6 +97,22 @@ public abstract partial class Parameter
             throw new InvalidOperationException($"There must be exactly one media type defined in '{Keys.Content}'");
     }
 
+    private string? ReadStyle()
+    {
+        if (!_reader.TryRead(Keys.Style, out var styleReader))
+            return null;
+
+        Annotations.Add(styleReader);
+        return styleReader.GetValue<string>();
+    }
+    protected void AssertStyle(params string[] validStyles)
+    {
+        if (Style == null)
+            return;
+        if (!validStyles.Contains(Style))
+            throw new InvalidOperationException($"Style '{Style}' is not valid for parameter location '{In}', valid styles are: {string.Join(", ", validStyles)}");
+    }
+
     protected readonly IDictionary<string, JsonNode?> Annotations = new Dictionary<string, JsonNode?>();
 
     internal static bool TryParse(JsonNodeReader reader, [NotNullWhen(true)] out Parameter? parameter)
@@ -116,4 +144,5 @@ public abstract partial class Parameter
     public Schema? Schema { get; private init; }
     public string? Description { get; private init; }
     public Content? Content { get; private init; }
+    public string? Style { get; private init; }
 }
