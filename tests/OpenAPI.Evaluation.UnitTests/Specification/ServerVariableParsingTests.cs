@@ -72,7 +72,7 @@ public class ServerVariableParsingTests
             variable.Enum.Should().BeNull();
         }
 
-        var @default = variableJson.GetObject("/default").GetValue<string>();
+        var @default = variableJson.ShouldGetObject("/default").GetValue<string>();
         variable.Default.Should().Be(@default);
 
         if (variableJson.TryGetObject("/description", out var descriptionNode))

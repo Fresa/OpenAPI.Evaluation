@@ -101,9 +101,9 @@ public class HeaderParsingTests
         }
         shouldThrow.Should().BeFalse();
 
-        var @in = jsonNode.GetObject("/in").GetValue<string>();
+        var @in = jsonNode.ShouldGetObject("/in").GetValue<string>();
         header!.In.Should().Be(@in);
-        var name = jsonNode.GetObject("/name").GetValue<string>();
+        var name = jsonNode.ShouldGetObject("/name").GetValue<string>();
         header.Name.Should().Be(name);
 
         if (jsonNode.TryGetObject("/description", out var descriptionNode))
