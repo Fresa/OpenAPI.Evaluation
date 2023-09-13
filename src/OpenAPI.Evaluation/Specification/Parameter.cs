@@ -38,6 +38,8 @@ public abstract class Parameter
         internal const string Style = "style";
         internal const string Deprecated = "deprecated";
         internal const string Explode = "explode";
+        internal const string Example = "example";
+        internal const string Examples = "examples";
     }
 
     private protected Parameter(JsonNodeReader reader)
@@ -50,6 +52,9 @@ public abstract class Parameter
         Style = ReadStyle();
         Deprecated = ReadDeprecated();
         Explode = ReadExplode();
+        Example = ReadExample();
+        Examples = ReadExamples();
+        AssertValidExamples();
     }
 
     protected bool? ReadRequired()
@@ -132,6 +137,28 @@ public abstract class Parameter
         Annotations.Add(explodeReader);
         return explodeReader.GetValue<bool>();
     }
+    private JsonNode? ReadExample()
+    {
+        if (!_reader.TryRead(Keys.Example, out var exampleReader))
+            return null;
+
+        var (key, value) = exampleReader;
+        Annotations.Add(key, value);
+        return value;
+    }
+    private Examples? ReadExamples()
+    {
+        if (!_reader.TryRead(Keys.Examples, out var examplesReader))
+            return null;
+
+        Annotations.Add(examplesReader);
+        return Examples.Parse(examplesReader);
+    }
+    private void AssertValidExamples()
+    {
+        if (Examples != null && Example != null)
+            throw new InvalidOperationException($"'{Keys.Example}' and '{Keys.Examples}' are mutually exclusive");
+    }
 
     protected readonly IDictionary<string, JsonNode?> Annotations = new Dictionary<string, JsonNode?>();
 
@@ -167,4 +194,6 @@ public abstract class Parameter
     public string? Style { get; private init; }
     public bool Deprecated { get; private init; }
     public bool Explode { get; protected init; }
+    public JsonNode? Example { get; private init; }
+    public Examples? Examples { get; private init; }
 }
