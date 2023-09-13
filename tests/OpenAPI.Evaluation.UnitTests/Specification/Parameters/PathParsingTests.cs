@@ -20,7 +20,10 @@ public class PathParsingTests
                   "type": "string"
                 }
               }
-            }
+            },
+            "examples": [{
+                "summary": "test1"
+            }]
         }
         """, false)]
     [InlineData("""
@@ -30,7 +33,12 @@ public class PathParsingTests
             "required": true,
             "schema": {
               "type": "string"
-            }            
+            },
+            "style": "label",
+            "description": "test",
+            "deprecated": false,
+            "explode": true,
+            "example": "test"  
         }
         """, false)]
     [InlineData("""
@@ -92,50 +100,6 @@ public class PathParsingTests
             throw;
         }
         shouldThrow.Should().BeFalse();
-
-        var @in = jsonNode.ShouldGetObject("/in").GetValue<string>();
-        parameter!.In.Should().Be(@in);
-        var name = jsonNode.ShouldGetObject("/name").GetValue<string>();
-        parameter.Name.Should().Be(name);
-
-        if (jsonNode.TryGetObject("/description", out var descriptionNode))
-        {
-            var description = descriptionNode.GetValue<string>();
-            parameter.Description.Should().Be(description);
-        }
-        else
-        {
-            parameter.Description.Should().BeNull();
-        }
-
-        if (jsonNode.TryGetObject("/required", out var requiredNode))
-        {
-            var required = requiredNode.GetValue<bool>();
-            parameter.Required.Should().Be(required);
-        }
-        else
-        {
-            parameter.Required.Should().BeFalse();
-        }
-
-        if (jsonNode.TryGetObject("/schema", out _))
-        {
-            parameter.Schema.Should().NotBeNull();
-        }
-        else
-        {
-            parameter.Schema.Should().BeNull();
-        }
-
-        if (jsonNode.TryGetObject("/content", out var contentNode))
-        {
-            var contentObject = contentNode.AsObject();
-            parameter.Content.Should().NotBeNull();
-            parameter.Content.Should().HaveCount(contentObject.Count);
-        }
-        else
-        {
-            parameter.Content.Should().BeNull();
-        }
+        parameter.ShouldBeEquivalentTo(jsonNode);
     }
 }

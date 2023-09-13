@@ -19,7 +19,10 @@ public class HeaderParsingTests
                   "type": "string"
                 }
               }
-            }
+            },
+            "examples": [{
+                "summary": "test1"
+            }]
         }
         """, false, true)]
     [InlineData("""
@@ -28,7 +31,12 @@ public class HeaderParsingTests
             "name": "test",
             "schema": {
               "type": "string"
-            }            
+            },
+            "style": "simple",
+            "description": "test",
+            "deprecated": false,
+            "explode": true,
+            "example": "test"  
         }
         """, false, true)]
     [InlineData("""
@@ -100,50 +108,6 @@ public class HeaderParsingTests
             throw;
         }
         shouldThrow.Should().BeFalse();
-
-        var @in = jsonNode.ShouldGetObject("/in").GetValue<string>();
-        header!.In.Should().Be(@in);
-        var name = jsonNode.ShouldGetObject("/name").GetValue<string>();
-        header.Name.Should().Be(name);
-
-        if (jsonNode.TryGetObject("/description", out var descriptionNode))
-        {
-            var description = descriptionNode.GetValue<string>();
-            header.Description.Should().Be(description);
-        }
-        else
-        {
-            header.Description.Should().BeNull();
-        }
-
-        if (jsonNode.TryGetObject("/required", out var requiredNode))
-        {
-            var required = requiredNode.GetValue<bool>();
-            header.Required.Should().Be(required);
-        }
-        else
-        {
-            header.Required.Should().BeFalse();
-        }
-
-        if (jsonNode.TryGetObject("/schema", out _))
-        {
-            header.Schema.Should().NotBeNull();
-        }
-        else
-        {
-            header.Schema.Should().BeNull();
-        }
-
-        if (jsonNode.TryGetObject("/content", out var contentNode))
-        {
-            var contentObject = contentNode.AsObject();
-            header.Content.Should().NotBeNull();
-            header.Content.Should().HaveCount(contentObject.Count);
-        }
-        else
-        {
-            header.Content.Should().BeNull();
-        }
+        header!.ShouldBeEquivalentTo(jsonNode);
     }
 }

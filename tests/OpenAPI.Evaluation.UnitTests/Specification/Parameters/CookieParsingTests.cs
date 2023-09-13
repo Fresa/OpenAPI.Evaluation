@@ -32,6 +32,7 @@ public class CookieParsingTests
               "type": "string"
             },
             "style": "form",
+            "description": "test",
             "deprecated": false,
             "explode": true,
             "example": "test"
