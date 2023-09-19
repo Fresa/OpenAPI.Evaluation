@@ -142,8 +142,8 @@ public abstract class Parameter
         if (!_reader.TryRead(Keys.Example, out var exampleReader))
             return null;
 
-        var (key, value) = exampleReader;
-        Annotations.Add(key, value);
+        var (_, value) = exampleReader;
+        Annotations.Add(exampleReader);
         return value;
     }
     private Examples? ReadExamples()
@@ -151,8 +151,9 @@ public abstract class Parameter
         if (!_reader.TryRead(Keys.Examples, out var examplesReader))
             return null;
 
-        Annotations.Add(examplesReader);
-        return Examples.Parse(examplesReader);
+        var examples = Examples.Parse(examplesReader);
+        Annotations.Add(examplesReader.Key, new JsonObject(examples.Annotations));
+        return examples;
     }
     private void AssertValidExamples()
     {

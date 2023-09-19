@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Nodes;
 
 namespace OpenAPI.Evaluation.Specification;
 
@@ -10,10 +11,19 @@ public sealed class Examples : IReadOnlyDictionary<string, Example>
     private Examples(JsonNodeReader reader)
     {
         _examples = reader.ReadChildren()
-            .ToDictionary(nodeReader => nodeReader.Key, Example.Parse);
+            .ToDictionary(nodeReader => nodeReader.Key, nodeReader =>
+            {
+                var example = Example.Parse(nodeReader);
+                _annotations.Add(nodeReader.Key, new JsonObject(example.Annotations));
+                return example;
+            });
     }
 
     internal static Examples Parse(JsonNodeReader reader) => new(reader);
+
+    private readonly IDictionary<string, JsonNode?> _annotations =
+        new Dictionary<string, JsonNode?>();
+    internal IReadOnlyDictionary<string, JsonNode?> Annotations => _annotations.AsReadOnly();
 
     public IEnumerator<KeyValuePair<string, Example>> GetEnumerator() => _examples.GetEnumerator();
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
