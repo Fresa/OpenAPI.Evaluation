@@ -38,7 +38,7 @@ public sealed partial class MediaType
         return new Evaluator(context, this);
     }
 
-    public class Evaluator
+    public sealed class Evaluator
     {
         private readonly OpenApiEvaluationContext _openApiEvaluationContext;
         private readonly MediaType _mediaType;

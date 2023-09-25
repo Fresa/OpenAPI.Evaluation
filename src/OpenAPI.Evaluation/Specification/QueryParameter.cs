@@ -53,12 +53,13 @@ public sealed class QueryParameter : Parameter
         return new Evaluator(context, this);
     }
 
-    internal sealed class Evaluator
+    internal sealed class Evaluator : ParameterEvaluator
     {
         private readonly OpenApiEvaluationContext _openApiEvaluationContext;
         private readonly QueryParameter _parameter;
 
-        internal Evaluator(OpenApiEvaluationContext openApiEvaluationContext, QueryParameter parameter)
+        internal Evaluator(OpenApiEvaluationContext openApiEvaluationContext, QueryParameter parameter) :
+            base(openApiEvaluationContext, parameter)
         {
             _openApiEvaluationContext = openApiEvaluationContext;
             _parameter = parameter;
@@ -76,15 +77,7 @@ public sealed class QueryParameter : Parameter
                 return;
             }
 
-            _parameter.Schema?.GetEvaluator(_openApiEvaluationContext).Evaluate(stringValues);
-
-            if (_parameter.Content != null &&
-                _parameter.Content.GetEvaluator(_openApiEvaluationContext)
-                    .TryMatch(MediaTypeValue.ApplicationJson, out var contentEvaluator))
-            {
-                var node = JsonNode.Parse(stringValues.First());
-                contentEvaluator.Evaluate(node);
-            }
+            Evaluate(stringValues);
         }
     }
 }

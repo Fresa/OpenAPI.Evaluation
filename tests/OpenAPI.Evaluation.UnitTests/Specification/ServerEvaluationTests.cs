@@ -147,7 +147,11 @@ public class ServerEvaluationTests
         var reader = new JsonNodeReader(serverNode!, JsonPointer.Empty);
         var server = Server.Parse(reader);
         var evaluationContext = new OpenApiEvaluationContext(
-            new JsonNodeBaseDocument(serverNode!, new Uri("http://localhost")), reader, EvaluationOptions.Default);
+            reader, new OpenApiEvaluationOptions
+            {
+                Document = new JsonNodeBaseDocument(serverNode!, new Uri("http://localhost")),
+                JsonSchemaEvaluationOptions = EvaluationOptions.Default
+            });
         var evaluator = server.GetEvaluator(evaluationContext);
         try
         {

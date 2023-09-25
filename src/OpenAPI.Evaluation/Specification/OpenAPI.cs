@@ -12,12 +12,7 @@ public sealed class OpenAPI
     // https://github.com/OAI/OpenAPI-Specification/blob/2ea76e67ab1c4be2013ff6b7f6bda230901617ae/versions/3.1.0.md#versions
     private readonly SemVer _to = "3.2.0";
 
-    private readonly JsonNodeBaseDocument _baseDocument;
-    private readonly EvaluationOptions _evaluationOptions = new()
-    {
-        OutputFormat = OutputFormat.Hierarchical,
-        EvaluateAs = SpecVersion.Draft202012
-    };
+    private readonly OpenApiEvaluationOptions _evaluationOptions;
     private readonly JsonNodeReader _reader;
 
     private OpenAPI(JsonNode document, Uri? baseUri = null)
@@ -33,9 +28,21 @@ public sealed class OpenAPI
 
         Paths = Paths.Parse(_reader.Read("paths"));
 
-        _baseDocument = new JsonNodeBaseDocument(document, baseUri);
-        Json.Schema.OpenApi.Vocabularies.Register(_evaluationOptions.VocabularyRegistry, _evaluationOptions.SchemaRegistry);
-        _evaluationOptions.SchemaRegistry.Register(_baseDocument);
+        var baseDocument = new JsonNodeBaseDocument(document, baseUri);
+
+        var jsonSchemaEvaluationOptions = new EvaluationOptions
+        {
+            OutputFormat = OutputFormat.Hierarchical,
+            EvaluateAs = SpecVersion.Draft202012
+        };
+        Json.Schema.OpenApi.Vocabularies.Register(jsonSchemaEvaluationOptions.VocabularyRegistry, jsonSchemaEvaluationOptions.SchemaRegistry);
+        jsonSchemaEvaluationOptions.SchemaRegistry.Register(baseDocument);
+        _evaluationOptions = new OpenApiEvaluationOptions()
+        {
+            JsonSchemaEvaluationOptions = jsonSchemaEvaluationOptions,
+            Document = baseDocument,
+            ParameterValueConverters = { }
+        };
     }
 
     private void EnsureSupportedOpenApiVersion()
@@ -65,7 +72,7 @@ public sealed class OpenAPI
     public bool TryGetApiOperation(HttpRequestMessage message, [NotNullWhen(true)] out Operation.Evaluator? operation,
         out OpenApiEvaluationResults evaluationResults)
     {
-        var rootEvaluationContext = new OpenApiEvaluationContext(_baseDocument, _reader, _evaluationOptions);
+        var rootEvaluationContext = new OpenApiEvaluationContext(_reader, _evaluationOptions);
         evaluationResults = rootEvaluationContext.Results;
         operation = null;
 
@@ -75,9 +82,9 @@ public sealed class OpenAPI
         {
             throw new ArgumentNullException($"{nameof(message)}.{nameof(message.RequestUri)}", "Request URI is not an absolute uri");
         }
-        
-        if (!Paths.GetEvaluator(rootEvaluationContext).TryMatch(requestUri, 
-                out var pathItemEvaluator, 
+
+        if (!Paths.GetEvaluator(rootEvaluationContext).TryMatch(requestUri,
+                out var pathItemEvaluator,
                 out var serverUri))
             return false;
 
@@ -97,7 +104,7 @@ public sealed class OpenAPI
         operation = foundOperation;
         return true;
     }
-    
-    public override string ToString() => 
-        _baseDocument.BaseUri.ToString();
+
+    public override string ToString() =>
+        _evaluationOptions.Document.BaseUri.ToString();
 }

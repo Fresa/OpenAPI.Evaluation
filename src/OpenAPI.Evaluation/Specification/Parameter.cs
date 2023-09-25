@@ -1,6 +1,10 @@
 using System.Diagnostics.CodeAnalysis;
+using System.Net.Http.Headers;
 using System.Text.Json.Nodes;
+using Json.Schema;
 using OpenAPI.Evaluation.Collections;
+using OpenAPI.Evaluation.Http;
+using OpenAPI.Evaluation.ParameterConverters;
 
 namespace OpenAPI.Evaluation.Specification;
 
@@ -197,4 +201,54 @@ public abstract class Parameter
     public bool Explode { get; protected init; }
     public JsonNode? Example { get; private init; }
     public Examples? Examples { get; private init; }
+
+    internal abstract class ParameterEvaluator
+    {
+        private readonly OpenApiEvaluationContext _openApiEvaluationContext;
+        private readonly Parameter _parameter;
+        private IParameterValueConverter? _converter;
+
+        protected ParameterEvaluator(OpenApiEvaluationContext openApiEvaluationContext, Parameter parameter)
+        {
+            _openApiEvaluationContext = openApiEvaluationContext;
+            _parameter = parameter;
+        }
+
+        private IParameterValueConverter GetParameterValueConverter(JsonSchema schema)
+        {
+            var converter = _openApiEvaluationContext.EvaluationOptions.ParameterValueConverters.FirstOrDefault(converter =>
+                converter.ParameterLocation == _parameter.In &&
+                converter.ParameterName == _parameter.Name);
+            return converter ?? new SchemaParameterValueConverter(_parameter, schema);
+        }
+
+        protected void Evaluate(string[] values)
+        {
+            var schemaEvaluator = _parameter.Schema?.GetEvaluator(_openApiEvaluationContext);
+            if (schemaEvaluator != null)
+            {
+                var schema = schemaEvaluator.ResolveSchema();
+                _converter ??= GetParameterValueConverter(schema);
+                if (!_converter.TryMap(values, out var instance, out var mappingError))
+                {
+                    _openApiEvaluationContext.Results.Fail(mappingError);
+                    return;
+                }
+
+                schemaEvaluator.Evaluate(instance);
+                return;
+            }
+
+            if (_parameter.Content != null &&
+                _parameter.Content.GetEvaluator(_openApiEvaluationContext)
+                    .TryMatch(MediaTypeValue.ApplicationJson, out var mediaTypeEvaluator))
+            {
+                if (values.Length != 1)
+                {
+                    _openApiEvaluationContext.Results.Fail($"Expected 1 value when the parameter is as json content, found {values.Length}");
+                }
+                mediaTypeEvaluator.Evaluate(values.First());
+            }
+        }
+    }
 }
