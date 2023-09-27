@@ -27,6 +27,7 @@ public sealed class CookieParameter : Parameter
     public override string In { get; protected init; }
     public override bool Required { get; protected init; }
     public override string Style { get; protected init; }
+    public override bool Explode { get; protected init; }
 
     internal Evaluator GetEvaluator(OpenApiEvaluationContext openApiEvaluationContext)
     {

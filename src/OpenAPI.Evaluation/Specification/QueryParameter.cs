@@ -43,6 +43,7 @@ public sealed class QueryParameter : Parameter
     public override string In { get; protected init; }
     public override bool Required { get; protected init; }
     public override string Style { get; protected init; }
+    public override bool Explode { get; protected init; }
     public bool AllowEmptyValue { get; private init; }
     public bool AllowReserved { get; private init; }
 

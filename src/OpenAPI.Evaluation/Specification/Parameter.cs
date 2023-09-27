@@ -193,7 +193,7 @@ public abstract class Parameter
     public Content? Content { get; private init; }
     public abstract string Style { get; protected init; }
     public bool Deprecated { get; private init; }
-    public bool Explode { get; protected init; }
+    public abstract bool Explode { get; protected init; }
     public JsonNode? Example { get; private init; }
     public Examples? Examples { get; private init; }
 
