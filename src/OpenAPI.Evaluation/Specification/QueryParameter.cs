@@ -16,6 +16,7 @@ public sealed class QueryParameter : Parameter
         Required = ReadRequired() ?? false;
         Style = ReadStyle() ?? Styles.Form;
         AssertStyle(Styles.Form, Styles.SpaceDelimited, Styles.PipeDelimited, Styles.DeepObject);
+        Explode = ReadExplode();
 
         AllowEmptyValue = ReadAllowEmptyValue();
         AllowReserved = ReadAllowReserved();

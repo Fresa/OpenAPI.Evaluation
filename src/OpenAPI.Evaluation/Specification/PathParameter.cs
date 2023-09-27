@@ -21,6 +21,7 @@ public sealed class PathParameter : Parameter
         };
         Style = ReadStyle() ?? Styles.Simple;
         AssertStyle(Styles.Matrix, Styles.Label, Styles.Simple);
+        Explode = ReadExplode();
     }
 
     internal static PathParameter Parse(JsonNodeReader reader) => new(reader);

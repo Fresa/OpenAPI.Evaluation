@@ -16,6 +16,7 @@ public sealed class HeaderParameter : Parameter
         Required = ReadRequired() ?? false;
         Style = ReadStyle() ?? Styles.Simple;
         AssertStyle(Styles.Simple);
+        Explode = ReadExplode();
     }
 
     private HeaderParameter(JsonNodeReader reader, string name) : base(reader)

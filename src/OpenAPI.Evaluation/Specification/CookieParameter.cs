@@ -18,6 +18,7 @@ public sealed class CookieParameter : Parameter
 
         Style = ReadStyle() ?? Styles.Form;
         AssertStyle(Styles.Form);
+        Explode = ReadExplode();
     }
 
     internal static CookieParameter Parse(JsonNodeReader reader) => new(reader);

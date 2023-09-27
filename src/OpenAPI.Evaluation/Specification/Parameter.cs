@@ -1,5 +1,4 @@
 using System.Diagnostics.CodeAnalysis;
-using System.Net.Http.Headers;
 using System.Text.Json.Nodes;
 using Json.Schema;
 using OpenAPI.Evaluation.Collections;
@@ -54,7 +53,6 @@ public abstract class Parameter
         Schema = ReadSchema();
         AssertSchemaOrContent();
         Deprecated = ReadDeprecated();
-        Explode = ReadExplode();
         Example = ReadExample();
         Examples = ReadExamples();
         AssertValidExamples();
@@ -130,7 +128,7 @@ public abstract class Parameter
         Annotations.Add(deprecatedReader);
         return deprecatedReader.GetValue<bool>();
     }
-    private bool ReadExplode()
+    protected bool ReadExplode()
     {
         if (!_reader.TryRead(Keys.Explode, out var explodeReader))
             return Style == Styles.Form;
