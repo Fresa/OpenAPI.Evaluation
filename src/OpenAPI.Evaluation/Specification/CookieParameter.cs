@@ -13,9 +13,10 @@ public sealed class CookieParameter : Parameter
         _reader = reader;
         Name = ReadName();
         In = ReadIn();
+        AssertLocation(Location.Cookie);
         Required = ReadRequired() ?? false;
 
-        AssertLocation(Location.Cookie);
+        Style = ReadStyle() ?? Styles.Form;
         AssertStyle(Styles.Form);
     }
 
@@ -24,6 +25,7 @@ public sealed class CookieParameter : Parameter
     public override string Name { get; protected init; }
     public override string In { get; protected init; }
     public override bool Required { get; protected init; }
+    public override string Style { get; protected init; }
 
     internal Evaluator GetEvaluator(OpenApiEvaluationContext openApiEvaluationContext)
     {

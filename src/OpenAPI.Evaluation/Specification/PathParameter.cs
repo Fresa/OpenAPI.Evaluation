@@ -12,14 +12,14 @@ public sealed class PathParameter : Parameter
         _reader = reader;
         Name = ReadName();
         In = ReadIn();
+        AssertLocation(Location.Path);
         Required = ReadRequired() switch
         {
             true => true,
             false => throw new ArgumentException($"'{Keys.Required}' must be true"),
             null => throw new ArgumentException($"'{Keys.Required}' is required")
         };
-        
-        AssertLocation(Location.Path);
+        Style = ReadStyle() ?? Styles.Simple;
         AssertStyle(Styles.Matrix, Styles.Label, Styles.Simple);
     }
 
@@ -28,7 +28,8 @@ public sealed class PathParameter : Parameter
     public override string Name { get; protected init; }
     public override string In { get; protected init; }
     public override bool Required { get; protected init; }
-    
+    public override string Style { get; protected init; }
+
     internal Evaluator GetEvaluator(OpenApiEvaluationContext openApiEvaluationContext)
     {
         var context = openApiEvaluationContext.Evaluate(_reader);

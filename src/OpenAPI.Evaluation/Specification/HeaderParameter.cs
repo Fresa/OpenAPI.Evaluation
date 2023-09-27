@@ -12,8 +12,9 @@ public sealed class HeaderParameter : Parameter
         _reader = reader;
         Name = ReadName();
         In = ReadIn();
-        Required = ReadRequired() ?? false;
         AssertLocation(Location.Header);
+        Required = ReadRequired() ?? false;
+        Style = ReadStyle() ?? Styles.Simple;
         AssertStyle(Styles.Simple);
     }
 
@@ -23,6 +24,8 @@ public sealed class HeaderParameter : Parameter
         Name = name;
         In = Location.Header;
         Required = ReadRequired() ?? false;
+        Style = ReadStyle() ?? Styles.Simple;
+        AssertStyle(Styles.Simple);
     }
 
     private static readonly string[] IgnoredRequestHeaders = { "Accept", "Content-Type", "Authorization" };
@@ -48,7 +51,8 @@ public sealed class HeaderParameter : Parameter
     public override string Name { get; protected init; }
     public override string In { get; protected init; }
     public override bool Required { get; protected init; }
-    
+    public override string Style { get; protected init; }
+
     internal Evaluator GetEvaluator(OpenApiEvaluationContext openApiEvaluationContext)
     {
         var context = openApiEvaluationContext.Evaluate(_reader);

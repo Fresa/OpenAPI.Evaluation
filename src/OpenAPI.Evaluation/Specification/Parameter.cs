@@ -20,7 +20,7 @@ public abstract class Parameter
         public const string Cookie = "cookie";
         public static readonly string[] All = { Header, Path, Query, Cookie };
     }
-    protected static class Styles
+    internal static class Styles
     {
         public const string Matrix = "matrix";
         public const string Label = "label";
@@ -53,7 +53,6 @@ public abstract class Parameter
         Content = ReadContent();
         Schema = ReadSchema();
         AssertSchemaOrContent();
-        Style = ReadStyle();
         Deprecated = ReadDeprecated();
         Explode = ReadExplode();
         Example = ReadExample();
@@ -110,7 +109,7 @@ public abstract class Parameter
             throw new InvalidOperationException($"There must be exactly one media type defined in '{Keys.Content}'");
     }
 
-    private string? ReadStyle()
+    protected string? ReadStyle()
     {
         if (!_reader.TryRead(Keys.Style, out var styleReader))
             return null;
@@ -120,8 +119,6 @@ public abstract class Parameter
     }
     protected void AssertStyle(params string[] validStyles)
     {
-        if (Style == null)
-            return;
         if (!validStyles.Contains(Style))
             throw new InvalidOperationException($"Style '{Style}' is not valid for parameter location '{In}', valid styles are: {string.Join(", ", validStyles)}");
     }
@@ -196,7 +193,7 @@ public abstract class Parameter
     public Schema? Schema { get; private init; }
     public string? Description { get; private init; }
     public Content? Content { get; private init; }
-    public string? Style { get; private init; }
+    public abstract string Style { get; protected init; }
     public bool Deprecated { get; private init; }
     public bool Explode { get; protected init; }
     public JsonNode? Example { get; private init; }

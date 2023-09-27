@@ -1,7 +1,5 @@
 using System.Collections.Specialized;
-using System.Text.Json.Nodes;
 using OpenAPI.Evaluation.Collections;
-using OpenAPI.Evaluation.Http;
 
 namespace OpenAPI.Evaluation.Specification;
 
@@ -14,9 +12,9 @@ public sealed class QueryParameter : Parameter
         _reader = reader;
         Name = ReadName();
         In = ReadIn();
-        Required = ReadRequired() ?? false;
-        
         AssertLocation(Location.Query);
+        Required = ReadRequired() ?? false;
+        Style = ReadStyle() ?? Styles.Form;
         AssertStyle(Styles.Form, Styles.SpaceDelimited, Styles.PipeDelimited, Styles.DeepObject);
 
         AllowEmptyValue = ReadAllowEmptyValue();
@@ -43,6 +41,7 @@ public sealed class QueryParameter : Parameter
     public override string Name { get; protected init; }
     public override string In { get; protected init; }
     public override bool Required { get; protected init; }
+    public override string Style { get; protected init; }
     public bool AllowEmptyValue { get; private init; }
     public bool AllowReserved { get; private init; }
 
