@@ -79,8 +79,8 @@ internal sealed class SchemaParameterValueConverter : IParameterValueConverter
     }
 
     private bool TryGetArray(
-        string[] values, 
-        [NotNullWhen(true)] out JsonNode? array, 
+        string[] values,
+        [NotNullWhen(true)] out JsonNode? array,
         [NotNullWhen(false)] out string? error)
     {
         var itemsSchema = _schema.GetItems();
@@ -120,7 +120,40 @@ internal sealed class SchemaParameterValueConverter : IParameterValueConverter
                     array = null;
                     return false;
                 }
-                arrayValues = values.First().Split('.', StringSplitOptions.RemoveEmptyEntries);
+                arrayValues = values
+                    .First()
+                    .Split('.')[1..];
+                return TryGetArrayItems(itemMapper, arrayValues, out array, out error);
+            case Parameter.Styles.Matrix:
+                if (values.Length != 1)
+                {
+                    error = $"Expected one value when parameter style is '{Parameter.Styles.Matrix}'";
+                    array = null;
+                    return false;
+                }
+
+                arrayValues = values
+                    .First()
+                    .Split(';', StringSplitOptions.RemoveEmptyEntries)
+                    .SelectMany(expression =>
+                    {
+                        var valueAndKey = expression.Split('=');
+                        var value = valueAndKey.Length == 1 ? string.Empty : valueAndKey.Last();
+                        return _parameter.Explode ? new[] { value } : value.Split(',');
+                    })
+                    .ToArray();
+                return TryGetArrayItems(itemMapper, arrayValues, out array, out error);
+            case Parameter.Styles.Simple:
+                if (values.Length != 1)
+                {
+                    error = $"Expected one value when parameter style is '{Parameter.Styles.Simple}'";
+                    array = null;
+                    return false;
+                }
+
+                arrayValues = values
+                    .First()
+                    .Split(',');
                 return TryGetArrayItems(itemMapper, arrayValues, out array, out error);
             default:
                 throw new NotSupportedException($"Style '{_parameter.Style}' not supported");
@@ -128,9 +161,9 @@ internal sealed class SchemaParameterValueConverter : IParameterValueConverter
     }
 
     private static bool TryGetArrayItems(
-        IParameterValueConverter itemMapper, 
-        IReadOnlyList<string> values, 
-        [NotNullWhen(true)] out JsonNode? array, 
+        IParameterValueConverter itemMapper,
+        IReadOnlyList<string> values,
+        [NotNullWhen(true)] out JsonNode? array,
         [NotNullWhen(false)] out string? error)
     {
         var items = new JsonNode?[values.Count];

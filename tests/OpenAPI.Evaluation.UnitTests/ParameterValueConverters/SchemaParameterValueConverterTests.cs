@@ -17,7 +17,10 @@ public class SchemaParameterValueConverterTests
     [MemberData(nameof(Boolean))]
     [MemberData(nameof(Null))]
     [MemberData(nameof(Empty))]
-    [MemberData(nameof(Array))]
+    [MemberData(nameof(ArrayLabel))]
+    [MemberData(nameof(ArrayForm))]
+    [MemberData(nameof(ArrayMatrix))]
+    [MemberData(nameof(ArraySimple))]
     public void Given_a_parameter_with_schema_When_mapping_values_It_should_map_the_value_to_proper_json(
         string parameterJson,
         string[] values,
@@ -47,7 +50,72 @@ public class SchemaParameterValueConverterTests
         }
     }
 
-    public static TheoryData<string, string[], bool, string?> Array => new()
+    #region Array
+    public static TheoryData<string, string[], bool, string?> ArrayLabel => new()
+    {
+        {
+            """
+            {
+                "name": "test",
+                "in": "path",
+                "schema": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "required": true,
+                "style": "label",
+                "explode": true
+            }
+            """,
+            new[] { ".test.test2" },
+            true,
+            "[\"test\",\"test2\"]"
+        },
+        {
+            """
+            {
+                "name": "test",
+                "in": "path",
+                "schema": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "required": true,
+                "style": "label",
+                "explode": false
+            }
+            """,
+            new[] { ".test.test2" },
+            true,
+            "[\"test\",\"test2\"]"
+        },
+        {
+            """
+            {
+                "name": "test",
+                "in": "path",
+                "schema": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "required": true,
+                "style": "label",
+                "explode": false
+            }
+            """,
+            new[] { ".test." },
+            true,
+            "[\"test\",\"\"]"
+        }
+    };
+
+    public static TheoryData<string, string[], bool, string?> ArrayForm => new()
     {
         {
             """
@@ -86,7 +154,11 @@ public class SchemaParameterValueConverterTests
             new[] { "test,test2" },
             true,
             "[\"test\",\"test2\"]"
-        },
+        }
+    };
+
+    public static TheoryData<string, string[], bool, string?> ArrayMatrix => new()
+    {
         {
             """
             {
@@ -99,11 +171,11 @@ public class SchemaParameterValueConverterTests
                     }
                 },
                 "required": true,
-                "style": "label",
+                "style": "matrix",
                 "explode": true
             }
             """,
-            new[] { ".test.test2" },
+            new[] { ";test=test;test=test2" },
             true,
             "[\"test\",\"test2\"]"
         },
@@ -119,15 +191,101 @@ public class SchemaParameterValueConverterTests
                     }
                 },
                 "required": true,
-                "style": "label",
+                "style": "matrix",
+                "explode": true
+            }
+            """,
+            new[] { ";test=test;test" },
+            true,
+            "[\"test\",\"\"]"
+        },
+        {
+            """
+            {
+                "name": "test",
+                "in": "path",
+                "schema": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "required": true,
+                "style": "matrix",
                 "explode": false
             }
             """,
-            new[] { ".test.test2" },
+            new[] { ";test=test,test2" },
             true,
             "[\"test\",\"test2\"]"
         }
     };
+
+    public static TheoryData<string, string[], bool, string?> ArraySimple => new()
+    {
+        {
+            """
+            {
+                "name": "test",
+                "in": "path",
+                "schema": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "required": true,
+                "style": "simple",
+                "explode": true
+            }
+            """,
+            new[] { "test,test2" },
+            true,
+            "[\"test\",\"test2\"]"
+        },
+        {
+            """
+            {
+                "name": "test",
+                "in": "path",
+                "schema": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "required": true,
+                "style": "simple",
+                "explode": true
+            }
+            """,
+            new[] { "test," },
+            true,
+            "[\"test\",\"\"]"
+        },
+        {
+            """
+            {
+                "name": "test",
+                "in": "path",
+                "schema": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "required": true,
+                "style": "simple",
+                "explode": false
+            }
+            """,
+            new[] { "test,test2" },
+            true,
+            "[\"test\",\"test2\"]"
+        }
+    };
+    #endregion
+
     public static TheoryData<string, string[], bool, string?> String => new()
     {
         {
