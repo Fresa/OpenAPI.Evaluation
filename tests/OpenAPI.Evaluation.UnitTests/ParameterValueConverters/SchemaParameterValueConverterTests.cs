@@ -17,6 +17,7 @@ public class SchemaParameterValueConverterTests
     [MemberData(nameof(Boolean))]
     [MemberData(nameof(Null))]
     [MemberData(nameof(Empty))]
+    [MemberData(nameof(Array))]
     public void Given_a_parameter_with_schema_When_mapping_values_It_should_map_the_value_to_proper_json(
         string parameterJson,
         string[] values,
@@ -46,6 +47,87 @@ public class SchemaParameterValueConverterTests
         }
     }
 
+    public static TheoryData<string, string[], bool, string?> Array => new()
+    {
+        {
+            """
+            {
+                "name": "test",
+                "in": "query",
+                "schema": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "style": "form",
+                "explode": true
+            }
+            """,
+            new[] { "test", "test2" },
+            true,
+            "[\"test\",\"test2\"]"
+        },
+        {
+            """
+            {
+                "name": "test",
+                "in": "query",
+                "schema": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "style": "form",
+                "explode": false
+            }
+            """,
+            new[] { "test,test2" },
+            true,
+            "[\"test\",\"test2\"]"
+        },
+        {
+            """
+            {
+                "name": "test",
+                "in": "path",
+                "schema": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "required": true,
+                "style": "label",
+                "explode": true
+            }
+            """,
+            new[] { ".test.test2" },
+            true,
+            "[\"test\",\"test2\"]"
+        },
+        {
+            """
+            {
+                "name": "test",
+                "in": "path",
+                "schema": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "required": true,
+                "style": "label",
+                "explode": false
+            }
+            """,
+            new[] { ".test.test2" },
+            true,
+            "[\"test\",\"test2\"]"
+        }
+    };
     public static TheoryData<string, string[], bool, string?> String => new()
     {
         {
@@ -146,7 +228,6 @@ public class SchemaParameterValueConverterTests
         }
     };
 
-    delegate TheoryData<string, string[], bool, string?> Testa();
     public static TheoryData<string, string[], bool, string?> Null => new()
     {
         {
@@ -159,7 +240,7 @@ public class SchemaParameterValueConverterTests
                 }
             }
             """,
-            Array.Empty<string>(),
+            System.Array.Empty<string>(),
             true,
             null
         }
