@@ -100,11 +100,20 @@ internal sealed class SchemaParameterValueConverter : IParameterValueConverter
             Parameter.Styles.Simple => TryGetSimpleStyleArrayItems(itemMapper, values, out array, out error),
             Parameter.Styles.SpaceDelimited => TryGetSpaceDelimitedStyleArrayItems(itemMapper, values, out array, out error),
             Parameter.Styles.PipeDelimited => TryGetPipeDelimitedStyleArrayItems(itemMapper, values, out array, out error),
-            _ => throw new NotSupportedException($"Style '{_parameter.Style}' not supported")
+            _ => StyleNotSupportedForArray(out array, out error)
         };
     }
 
-    private bool TryGetPipeDelimitedStyleArrayItems(
+    private bool StyleNotSupportedForArray(
+        [NotNullWhen(true)] out JsonNode? array,
+        [NotNullWhen(false)] out string? error)
+    {
+        array = null;
+        error = $"Style '{_parameter.Style}' not supported for arrays";
+        return false;
+    }
+
+private bool TryGetPipeDelimitedStyleArrayItems(
         IParameterValueConverter itemMapper,
         IReadOnlyCollection<string> values,
         [NotNullWhen(true)] out JsonNode? array,
