@@ -22,6 +22,7 @@ public class SchemaParameterValueConverterTests
     [MemberData(nameof(ArrayMatrix))]
     [MemberData(nameof(ArraySimple))]
     [MemberData(nameof(ArraySpaceDelimited))]
+    [MemberData(nameof(ArrayPipeDelimited))]
     public void Given_a_parameter_with_schema_When_mapping_values_It_should_map_the_value_to_proper_json(
         string parameterJson,
         string[] values,
@@ -338,6 +339,67 @@ public class SchemaParameterValueConverterTests
                     }
                 },
                 "style": "spaceDelimited",
+                "explode": false
+            }
+            """,
+            new[] { "test", "test2" },
+            true,
+            "[\"test\",\"test2\"]"
+        }
+    };
+
+    public static TheoryData<string, string[], bool, string?> ArrayPipeDelimited => new()
+    {
+        {
+            """
+            {
+                "name": "test",
+                "in": "query",
+                "schema": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "style": "pipeDelimited",
+                "explode": true
+            }
+            """,
+            new[] { "test|test2" },
+            true,
+            "[\"test\",\"test2\"]"
+        },
+        {
+            """
+            {
+                "name": "test",
+                "in": "query",
+                "schema": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "style": "pipeDelimited",
+                "explode": true
+            }
+            """,
+            new[] { "test|" },
+            true,
+            "[\"test\",\"\"]"
+        },
+        {
+            """
+            {
+                "name": "test",
+                "in": "query",
+                "schema": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "style": "pipeDelimited",
                 "explode": false
             }
             """,
