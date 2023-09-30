@@ -98,8 +98,32 @@ internal sealed class SchemaParameterValueConverter : IParameterValueConverter
             Parameter.Styles.Label => TryGetLabelStyleArrayItems(itemMapper, values, out array, out error),
             Parameter.Styles.Matrix => TryGetMatrixStyleArrayItems(itemMapper, values, out array, out error),
             Parameter.Styles.Simple => TryGetSimpleStyleArrayItems(itemMapper, values, out array, out error),
+            Parameter.Styles.SpaceDelimited => TryGetSpaceDelimitedStyleArrayItems(itemMapper, values, out array, out error),
             _ => throw new NotSupportedException($"Style '{_parameter.Style}' not supported")
         };
+    }
+
+    private bool TryGetSpaceDelimitedStyleArrayItems(
+        IParameterValueConverter itemMapper,
+        IReadOnlyCollection<string> values,
+        [NotNullWhen(true)] out JsonNode? array,
+        [NotNullWhen(false)] out string? error)
+    {
+        if (!_parameter.Explode)
+        {
+            return TryGetArrayItems(itemMapper, values.ToArray(), out array, out error);
+        }
+
+        if (values.Count != 1)
+        {
+            error = "Expected one value when parameter doesn't specify explode";
+            array = null;
+            return false;
+        }
+
+        var arrayItems = values.First().Split(' ');
+        return TryGetArrayItems(itemMapper, arrayItems, out array, out error);
+
     }
 
     private bool TryGetFormStyleArrayItems(

@@ -21,6 +21,7 @@ public class SchemaParameterValueConverterTests
     [MemberData(nameof(ArrayForm))]
     [MemberData(nameof(ArrayMatrix))]
     [MemberData(nameof(ArraySimple))]
+    [MemberData(nameof(ArraySpaceDelimited))]
     public void Given_a_parameter_with_schema_When_mapping_values_It_should_map_the_value_to_proper_json(
         string parameterJson,
         string[] values,
@@ -280,6 +281,67 @@ public class SchemaParameterValueConverterTests
             }
             """,
             new[] { "test,test2" },
+            true,
+            "[\"test\",\"test2\"]"
+        }
+    };
+
+    public static TheoryData<string, string[], bool, string?> ArraySpaceDelimited => new()
+    {
+        {
+            """
+            {
+                "name": "test",
+                "in": "query",
+                "schema": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "style": "spaceDelimited",
+                "explode": true
+            }
+            """,
+            new[] { "test test2" },
+            true,
+            "[\"test\",\"test2\"]"
+        },
+        {
+            """
+            {
+                "name": "test",
+                "in": "query",
+                "schema": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "style": "spaceDelimited",
+                "explode": true
+            }
+            """,
+            new[] { "test " },
+            true,
+            "[\"test\",\"\"]"
+        },
+        {
+            """
+            {
+                "name": "test",
+                "in": "query",
+                "schema": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "style": "spaceDelimited",
+                "explode": false
+            }
+            """,
+            new[] { "test", "test2" },
             true,
             "[\"test\",\"test2\"]"
         }
