@@ -79,7 +79,7 @@ internal sealed class SchemaParameterValueConverter : IParameterValueConverter
     }
 
     private bool TryGetArray(
-        string[] values,
+        IReadOnlyCollection<string> values,
         [NotNullWhen(true)] out JsonNode? array,
         [NotNullWhen(false)] out string? error)
     {
@@ -92,72 +92,99 @@ internal sealed class SchemaParameterValueConverter : IParameterValueConverter
         }
 
         var itemMapper = new SchemaParameterValueConverter(_parameter, itemsSchema);
-        string[] arrayValues;
-        switch (_parameter.Style)
+        return _parameter.Style switch
         {
-            case Parameter.Styles.Form:
-                if (_parameter.Explode)
-                {
-                    arrayValues = values;
-                }
-                else
-                {
-                    if (values.Length != 1)
-                    {
-                        error = "Expected one value when parameter doesn't specify explode";
-                        array = null;
-                        return false;
-                    }
+            Parameter.Styles.Form => TryGetFormStyleArrayItems(itemMapper, values, out array, out error),
+            Parameter.Styles.Label => TryGetLabelStyleArrayItems(itemMapper, values, out array, out error),
+            Parameter.Styles.Matrix => TryGetMatrixStyleArrayItems(itemMapper, values, out array, out error),
+            Parameter.Styles.Simple => TryGetSimpleStyleArrayItems(itemMapper, values, out array, out error),
+            _ => throw new NotSupportedException($"Style '{_parameter.Style}' not supported")
+        };
+    }
 
-                    arrayValues = values.First().Split(',');
-                }
-
-                return TryGetArrayItems(itemMapper, arrayValues, out array, out error);
-            case Parameter.Styles.Label:
-                if (values.Length != 1)
-                {
-                    error = $"Expected one value when parameter style is '{Parameter.Styles.Label}'";
-                    array = null;
-                    return false;
-                }
-                arrayValues = values
-                    .First()
-                    .Split('.')[1..];
-                return TryGetArrayItems(itemMapper, arrayValues, out array, out error);
-            case Parameter.Styles.Matrix:
-                if (values.Length != 1)
-                {
-                    error = $"Expected one value when parameter style is '{Parameter.Styles.Matrix}'";
-                    array = null;
-                    return false;
-                }
-
-                arrayValues = values
-                    .First()
-                    .Split(';', StringSplitOptions.RemoveEmptyEntries)
-                    .SelectMany(expression =>
-                    {
-                        var valueAndKey = expression.Split('=');
-                        var value = valueAndKey.Length == 1 ? string.Empty : valueAndKey.Last();
-                        return _parameter.Explode ? new[] { value } : value.Split(',');
-                    })
-                    .ToArray();
-                return TryGetArrayItems(itemMapper, arrayValues, out array, out error);
-            case Parameter.Styles.Simple:
-                if (values.Length != 1)
-                {
-                    error = $"Expected one value when parameter style is '{Parameter.Styles.Simple}'";
-                    array = null;
-                    return false;
-                }
-
-                arrayValues = values
-                    .First()
-                    .Split(',');
-                return TryGetArrayItems(itemMapper, arrayValues, out array, out error);
-            default:
-                throw new NotSupportedException($"Style '{_parameter.Style}' not supported");
+    private bool TryGetFormStyleArrayItems(
+        IParameterValueConverter itemMapper,
+        IReadOnlyCollection<string> values,
+        [NotNullWhen(true)] out JsonNode? array,
+        [NotNullWhen(false)] out string? error)
+    {
+        if (_parameter.Explode)
+        {
+            return TryGetArrayItems(itemMapper, values.ToArray(), out array, out error);
         }
+
+        if (values.Count != 1)
+        {
+            error = "Expected one value when parameter doesn't specify explode";
+            array = null;
+            return false;
+        }
+
+        var arrayValues = values.First().Split(',');
+        return TryGetArrayItems(itemMapper, arrayValues, out array, out error);
+    }
+
+    private bool TryGetLabelStyleArrayItems(
+        IParameterValueConverter itemMapper,
+        IReadOnlyCollection<string> values,
+        [NotNullWhen(true)] out JsonNode? array,
+        [NotNullWhen(false)] out string? error)
+    {
+        if (values.Count != 1)
+        {
+            error = $"Expected one value when parameter style is '{Parameter.Styles.Label}'";
+            array = null;
+            return false;
+        }
+        var arrayValues = values
+            .First()
+            .Split('.')[1..];
+        return TryGetArrayItems(itemMapper, arrayValues, out array, out error);
+    }
+
+    private bool TryGetSimpleStyleArrayItems(
+        IParameterValueConverter itemMapper,
+        IReadOnlyCollection<string> values,
+        [NotNullWhen(true)] out JsonNode? array,
+        [NotNullWhen(false)] out string? error)
+    {
+        if (values.Count != 1)
+        {
+            error = $"Expected one value when parameter style is '{Parameter.Styles.Simple}'";
+            array = null;
+            return false;
+        }
+
+        var arrayValues = values
+            .First()
+            .Split(',');
+        return TryGetArrayItems(itemMapper, arrayValues, out array, out error);
+    }
+
+    private bool TryGetMatrixStyleArrayItems(
+        IParameterValueConverter itemMapper,
+        IReadOnlyCollection<string> values,
+        [NotNullWhen(true)] out JsonNode? array,
+        [NotNullWhen(false)] out string? error)
+    {
+        if (values.Count != 1)
+        {
+            error = $"Expected one value when parameter style is '{Parameter.Styles.Matrix}'";
+            array = null;
+            return false;
+        }
+
+        var arrayValues = values
+            .First()
+            .Split(';', StringSplitOptions.RemoveEmptyEntries)
+            .SelectMany(expression =>
+            {
+                var valueAndKey = expression.Split('=');
+                var value = valueAndKey.Length == 1 ? string.Empty : valueAndKey.Last();
+                return _parameter.Explode ? new[] { value } : value.Split(',');
+            })
+            .ToArray();
+        return TryGetArrayItems(itemMapper, arrayValues, out array, out error);
     }
 
     private static bool TryGetArrayItems(
