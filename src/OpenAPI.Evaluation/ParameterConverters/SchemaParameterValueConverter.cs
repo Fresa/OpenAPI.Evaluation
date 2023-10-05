@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
 using Json.Schema;
 using OpenAPI.Evaluation.Specification;
 
@@ -9,11 +10,13 @@ internal sealed class SchemaParameterValueConverter : IParameterValueConverter
 {
     private readonly JsonSchema _schema;
     private readonly Parameter _parameter;
+    private readonly PropertySchemaResolver _propertySchemaResolver;
 
     public SchemaParameterValueConverter(Parameter parameter, JsonSchema schema)
     {
         _schema = schema;
         _parameter = parameter;
+        _propertySchemaResolver = new PropertySchemaResolver(_schema);
     }
 
     public string ParameterName => _parameter.Name;
@@ -54,7 +57,7 @@ internal sealed class SchemaParameterValueConverter : IParameterValueConverter
                 instance = value == null ? null : JsonNode.Parse(value);
                 return true;
             case SchemaValueType.Object:
-                throw new NotImplementedException($"Cannot map {jsonType} to json, please register a parameter value mapper");
+                return TryGetObject(values, out instance, out mappingError);
             case SchemaValueType.Array:
                 return TryGetArray(values, out instance, out mappingError);
             default:
@@ -77,6 +80,125 @@ internal sealed class SchemaParameterValueConverter : IParameterValueConverter
             return true;
         }
     }
+
+    private bool TryGetObject(
+        IReadOnlyCollection<string> values,
+        [NotNullWhen(true)] out JsonNode? obj,
+        [NotNullWhen(false)] out string? error)
+    {
+
+        return _parameter.Style switch
+        {
+            Parameter.Styles.Form => TryGetFormStyleObjectProperties(values, out obj, out error),
+            //Parameter.Styles.Label => TryGetLabelStyleArrayItems(itemMapper, values, out array, out error),
+            //Parameter.Styles.Matrix => TryGetMatrixStyleArrayItems(itemMapper, values, out array, out error),
+            //Parameter.Styles.SpaceDelimited => TryGetSpaceDelimitedStyleArrayItems(itemMapper, values, out array, out error),
+            //Parameter.Styles.PipeDelimited => TryGetPipeDelimitedStyleArrayItems(itemMapper, values, out array, out error),
+            Parameter.Styles.DeepObject => throw new NotImplementedException(),
+            _ => StyleNotSupportedForObject(out obj, out error)
+        };
+    }
+
+    private bool StyleNotSupportedForObject(
+        [NotNullWhen(true)] out JsonNode? array,
+        [NotNullWhen(false)] out string? error)
+    {
+        array = null;
+        error = $"Style '{_parameter.Style}' not supported for object";
+        return false;
+    }
+
+    private bool TryGetFormStyleObjectProperties(
+        IReadOnlyCollection<string> values,
+        [NotNullWhen(true)] out JsonNode? obj,
+        [NotNullWhen(false)] out string? error)
+    {
+        if (_parameter.Explode)
+        {
+            error = "form style with explode not supported for objects as the parameter name cannot be determined";
+            obj = null;
+            return false;
+        }
+
+        if (values.Count != 1)
+        {
+            error = "Expected one value when parameter doesn't specify explode";
+            obj = null;
+            return false;
+        }
+
+        var arrayValues = values.First().Split(',');
+
+        var jsonObject = new JsonObject();
+        for (var i = 0; i < arrayValues.Length; i += 2)
+        {
+            var propertyName = arrayValues[i];
+            var propertyValue = arrayValues[i + 1];
+            JsonNode? value;
+            if (_propertySchemaResolver.TryGetSchemaForProperty(propertyName, out var propertySchema))
+            {
+                var propertyConverter = new SchemaParameterValueConverter(_parameter, propertySchema);
+                if (!propertyConverter.TryMap(new[] { propertyValue }, out value, out error))
+                {
+                    obj = null;
+                    return false;
+                }
+            }
+            else
+            {
+                // Undefined type, use string as default as any value should be valid
+                value = JsonValue.Create(propertyValue);
+            }
+            jsonObject[propertyName] = value;
+        }
+
+        obj = jsonObject;
+        error = null;
+        return true;
+    }
+
+    private class PropertySchemaResolver
+    {
+        private readonly IReadOnlyDictionary<string, JsonSchema>? _propertySchemas;
+        private readonly JsonSchema? _additionalPropertiesSchema;
+        private readonly IReadOnlyDictionary<Regex, JsonSchema>? _patternPropertySchemas;
+
+        public PropertySchemaResolver(JsonSchema schema)
+        {
+            _propertySchemas = schema.GetProperties();
+            _additionalPropertiesSchema = schema.GetAdditionalProperties();
+            _patternPropertySchemas = schema.GetPatternProperties();
+
+        }
+
+        public bool TryGetSchemaForProperty(string propertyName, [NotNullWhen(true)] out JsonSchema? schema)
+        {
+            if (_propertySchemas?.TryGetValue(propertyName, out schema) ?? false)
+                return true;
+
+            if (_patternPropertySchemas != null)
+            {
+                foreach (var (pattern, patternSchema) in _patternPropertySchemas)
+                {
+                    if (pattern.Match(propertyName).Success)
+                    {
+                        schema = patternSchema;
+                        return true;
+                    }
+                }
+            }
+
+            if (_additionalPropertiesSchema != null)
+            {
+                schema = _additionalPropertiesSchema;
+                return true;
+            }
+
+            schema = null;
+            return false;
+        }
+    }
+
 
     private bool TryGetArray(
         IReadOnlyCollection<string> values,
@@ -113,7 +235,7 @@ internal sealed class SchemaParameterValueConverter : IParameterValueConverter
         return false;
     }
 
-private bool TryGetPipeDelimitedStyleArrayItems(
+    private bool TryGetPipeDelimitedStyleArrayItems(
         IParameterValueConverter itemMapper,
         IReadOnlyCollection<string> values,
         [NotNullWhen(true)] out JsonNode? array,

@@ -23,6 +23,7 @@ public class SchemaParameterValueConverterTests
     [MemberData(nameof(ArraySimple))]
     [MemberData(nameof(ArraySpaceDelimited))]
     [MemberData(nameof(ArrayPipeDelimited))]
+    [MemberData(nameof(ObjectForm))]
     public void Given_a_parameter_with_schema_When_mapping_values_It_should_map_the_value_to_proper_json(
         string parameterJson,
         string[] values,
@@ -51,6 +52,116 @@ public class SchemaParameterValueConverterTests
             instance.ToJsonString().Should().BeEquivalentTo(jsonInstance);
         }
     }
+
+    #region Object
+
+    public static TheoryData<string, string[], bool, string?> ObjectForm => new()
+    {
+        {
+            """
+            {
+                "name": "color",
+                "in": "query",
+                "schema": {
+                    "type": "object",
+                    "items": {
+                        "type": "string"
+                    },
+                    "properties": {
+                        "R": {
+                            "type": "number"
+                        },
+                        "G": {
+                            "type": "number"
+                        },
+                        "B": {
+                            "type": "number"
+                        }                        
+                    }
+                },
+                "style": "form",
+                "explode": false
+            }
+            """,
+            new[] { "R,100,G,200,B,150" },
+            true,
+            """{"R":100,"G":200,"B":150}"""
+        },
+        {
+            """
+            {
+                "name": "color",
+                "in": "query",
+                "schema": {
+                    "type": "object",
+                    "properties": {
+                        "R": {
+                            "type": "string"
+                        },
+                        "G": {
+                            "type": "string"
+                        },
+                        "B": {
+                            "type": "string"
+                        }                        
+                    }
+                },
+                "style": "form",
+                "explode": false
+            }
+            """,
+            new[] { "R,100,G,200,B," },
+            true,
+            """{"R":"100","G":"200","B":""}"""
+        },
+        {
+            """
+            {
+                "name": "color",
+                "in": "query",
+                "schema": {
+                    "type": "object",
+                    "additionalProperties": { 
+                        "type": "string" 
+                    }
+                },
+                "style": "form",
+                "explode": false
+            }
+            """,
+            new[] { "R,100,G,200,B," },
+            true,
+            """{"R":"100","G":"200","B":""}"""
+        },
+        {
+            """
+            {
+                "name": "color",
+                "in": "query",
+                "schema": {
+                    "type": "object",
+                    "patternProperties": {
+                        "^R": { 
+                            "type": "number" 
+                        },
+                        "^G": {
+                            "type": "integer" 
+                        }
+                    },            
+                    "additionalProperties": { 
+                        "type": "string" 
+                    }
+                },
+                "style": "form",
+                "explode": false
+            }
+            """,
+            new[] { "R,100,G,200,B," },
+            true,
+            """{"R":100,"G":200,"B":""}"""
+        }
+    };
+    #endregion
 
     #region Array
     public static TheoryData<string, string[], bool, string?> ArrayLabel => new()
