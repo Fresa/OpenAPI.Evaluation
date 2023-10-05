@@ -91,7 +91,7 @@ internal sealed class SchemaParameterValueConverter : IParameterValueConverter
         {
             Parameter.Styles.Form => TryGetFormStyleObjectProperties(values, out obj, out error),
             //Parameter.Styles.Label => TryGetLabelStyleArrayItems(itemMapper, values, out array, out error),
-            //Parameter.Styles.Matrix => TryGetMatrixStyleArrayItems(itemMapper, values, out array, out error),
+            Parameter.Styles.Matrix => TryGetMatrixStyleObjectProperties(values, out obj, out error),
             //Parameter.Styles.SpaceDelimited => TryGetSpaceDelimitedStyleArrayItems(itemMapper, values, out array, out error),
             //Parameter.Styles.PipeDelimited => TryGetPipeDelimitedStyleArrayItems(itemMapper, values, out array, out error),
             Parameter.Styles.DeepObject => throw new NotImplementedException(),
@@ -106,6 +106,33 @@ internal sealed class SchemaParameterValueConverter : IParameterValueConverter
         array = null;
         error = $"Style '{_parameter.Style}' not supported for object";
         return false;
+    }
+
+    private bool TryGetMatrixStyleObjectProperties(
+        IReadOnlyCollection<string> values,
+        [NotNullWhen(true)] out JsonNode? obj,
+        [NotNullWhen(false)] out string? error)
+    {
+        if (values.Count != 1)
+        {
+            error = $"Expected one value when parameter style is '{Parameter.Styles.Matrix}'";
+            obj = null;
+            return false;
+        }
+
+        var keyAndValues = values
+            .First()
+            .Split(';', StringSplitOptions.RemoveEmptyEntries)
+            .SelectMany(expression =>
+            {
+                var valueAndKey = expression.Split('=');
+                var key = valueAndKey[0];
+                var value = valueAndKey.Length == 1 ? string.Empty : valueAndKey.Last();
+                return _parameter.Explode ? new[] { key, value } : value.Split(',');
+            })
+            .ToArray();
+
+        return TryGetObjectProperties(keyAndValues, out obj, out error);
     }
 
     private bool TryGetFormStyleObjectProperties(
@@ -127,13 +154,21 @@ internal sealed class SchemaParameterValueConverter : IParameterValueConverter
             return false;
         }
 
-        var arrayValues = values.First().Split(',');
+        var keyAndValues = values.First().Split(',');
 
+        return TryGetObjectProperties(keyAndValues, out obj, out error);
+    }
+
+    private bool TryGetObjectProperties(
+        string[] keyAndValues,
+        [NotNullWhen(true)] out JsonNode? obj,
+        [NotNullWhen(false)] out string? error)
+    {
         var jsonObject = new JsonObject();
-        for (var i = 0; i < arrayValues.Length; i += 2)
+        for (var i = 0; i < keyAndValues.Length; i += 2)
         {
-            var propertyName = arrayValues[i];
-            var propertyValue = arrayValues[i + 1];
+            var propertyName = keyAndValues[i];
+            var propertyValue = keyAndValues[i + 1];
             JsonNode? value;
             if (_propertySchemaResolver.TryGetSchemaForProperty(propertyName, out var propertySchema))
             {
@@ -389,5 +424,4 @@ internal sealed class SchemaParameterValueConverter : IParameterValueConverter
         array = new JsonArray(items);
         return true;
     }
-
 }

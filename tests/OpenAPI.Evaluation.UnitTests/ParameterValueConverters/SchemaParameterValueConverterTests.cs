@@ -24,6 +24,7 @@ public class SchemaParameterValueConverterTests
     [MemberData(nameof(ArraySpaceDelimited))]
     [MemberData(nameof(ArrayPipeDelimited))]
     [MemberData(nameof(ObjectForm))]
+    [MemberData(nameof(ObjectMatrix))]
     public void Given_a_parameter_with_schema_When_mapping_values_It_should_map_the_value_to_proper_json(
         string parameterJson,
         string[] values,
@@ -54,7 +55,91 @@ public class SchemaParameterValueConverterTests
     }
 
     #region Object
-
+    public static TheoryData<string, string[], bool, string?> ObjectMatrix => new()
+    {
+        {
+            """
+            {
+                "name": "test",
+                "in": "path",
+                "schema": {
+                    "type": "object",
+                    "items": {
+                        "type": "string"
+                    },
+                    "properties": {
+                        "R": {
+                            "type": "number"
+                        },
+                        "G": {
+                            "type": "number"
+                        },
+                        "B": {
+                            "type": "number"
+                        }                        
+                    }
+                },
+                "required": true,
+                "style": "matrix",
+                "explode": true
+            }
+            """,
+            new[] { ";R=100;G=200;B=150" },
+            true,
+            """{"R":100,"G":200,"B":150}"""
+        },
+        {
+            """
+            {
+                "name": "test",
+                "in": "path",
+                "schema": {
+                    "type": "object",
+                    "additionalProperties": { 
+                        "type": "string" 
+                    }            
+                },
+                "required": true,
+                "style": "matrix",
+                "explode": true
+            }
+            """,
+            new[] { ";R=100;G=200;B" },
+            true,
+            """{"R":"100","G":"200","B":""}"""
+        },
+        {
+            """
+            {
+                "name": "color",
+                "in": "path",
+                "schema": {
+                    "type": "object",
+                    "items": {
+                        "type": "string"
+                    },
+                    "properties": {
+                        "R": {
+                            "type": "number"
+                        },
+                        "G": {
+                            "type": "number"
+                        },
+                        "B": {
+                            "type": "number"
+                        }                        
+                    }
+                },
+                "required": true,
+                "style": "matrix",
+                "explode": false
+            }
+            """,
+            new[] { ";color=R,100,G,200,B,150" },
+            true,
+            """{"R":100,"G":200,"B":150}"""
+        }
+    };
     public static TheoryData<string, string[], bool, string?> ObjectForm => new()
     {
         {
