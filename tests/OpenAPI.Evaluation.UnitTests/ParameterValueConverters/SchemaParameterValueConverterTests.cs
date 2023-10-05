@@ -25,6 +25,7 @@ public class SchemaParameterValueConverterTests
     [MemberData(nameof(ArrayPipeDelimited))]
     [MemberData(nameof(ObjectForm))]
     [MemberData(nameof(ObjectMatrix))]
+    [MemberData(nameof(ObjectLabel))]
     public void Given_a_parameter_with_schema_When_mapping_values_It_should_map_the_value_to_proper_json(
         string parameterJson,
         string[] values,
@@ -55,18 +56,114 @@ public class SchemaParameterValueConverterTests
     }
 
     #region Object
+    public static TheoryData<string, string[], bool, string?> ObjectLabel => new()
+    {
+        {
+            """
+            {
+                "name": "color",
+                "in": "path",
+                "schema": {
+                    "type": "object",
+                    "properties": {
+                        "R": {
+                            "type": "number"
+                        },
+                        "G": {
+                            "type": "number"
+                        },
+                        "B": {
+                            "type": "number"
+                        }                        
+                    }
+                },
+                "required": true,
+                "style": "label",
+                "explode": true
+            }
+            """,
+            new[] { ".R=100.G=200.B=150" },
+            true,
+            """{"R":100,"G":200,"B":150}"""
+        },
+        {
+            """
+            {
+                "name": "color",
+                "in": "path",
+                "schema": {
+                    "type": "object",
+                    "additionalProperties": { 
+                        "type": "string" 
+                    }            
+                },
+                "required": true,
+                "style": "label",
+                "explode": true
+            }
+            """,
+            new[] { ".R=100.G=200.B" },
+            true,
+            """{"R":"100","G":"200","B":""}"""
+        },
+        {
+            """
+            {
+                "name": "color",
+                "in": "path",
+                "schema": {
+                    "type": "object",
+                    "properties": {
+                        "R": {
+                            "type": "number"
+                        },
+                        "G": {
+                            "type": "number"
+                        },
+                        "B": {
+                            "type": "number"
+                        }                        
+                    }
+                },
+                "required": true,
+                "style": "label",
+                "explode": false
+            }
+            """,
+            new[] { ".R.100.G.200.B.150" },
+            true,
+            """{"R":100,"G":200,"B":150}"""
+        },
+        {
+        """
+            {
+                "name": "color",
+                "in": "path",
+                "schema": {
+                    "type": "object",
+                    "additionalProperties": { 
+                        "type": "string" 
+                    }            
+                },
+                "required": true,
+                "style": "label",
+                "explode": false
+            }
+            """,
+        new[] { ".R.100.G.200.B." },
+        true,
+        """{"R":"100","G":"200","B":""}"""
+        }
+    };
     public static TheoryData<string, string[], bool, string?> ObjectMatrix => new()
     {
         {
             """
             {
-                "name": "test",
+                "name": "color",
                 "in": "path",
                 "schema": {
                     "type": "object",
-                    "items": {
-                        "type": "string"
-                    },
                     "properties": {
                         "R": {
                             "type": "number"
@@ -91,7 +188,7 @@ public class SchemaParameterValueConverterTests
         {
             """
             {
-                "name": "test",
+                "name": "color",
                 "in": "path",
                 "schema": {
                     "type": "object",
@@ -115,9 +212,6 @@ public class SchemaParameterValueConverterTests
                 "in": "path",
                 "schema": {
                     "type": "object",
-                    "items": {
-                        "type": "string"
-                    },
                     "properties": {
                         "R": {
                             "type": "number"

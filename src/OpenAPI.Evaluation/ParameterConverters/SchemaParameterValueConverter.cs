@@ -90,7 +90,7 @@ internal sealed class SchemaParameterValueConverter : IParameterValueConverter
         return _parameter.Style switch
         {
             Parameter.Styles.Form => TryGetFormStyleObjectProperties(values, out obj, out error),
-            //Parameter.Styles.Label => TryGetLabelStyleArrayItems(itemMapper, values, out array, out error),
+            Parameter.Styles.Label => TryGetLabelStyleObjectProperties(values, out obj, out error),
             Parameter.Styles.Matrix => TryGetMatrixStyleObjectProperties(values, out obj, out error),
             //Parameter.Styles.SpaceDelimited => TryGetSpaceDelimitedStyleArrayItems(itemMapper, values, out array, out error),
             //Parameter.Styles.PipeDelimited => TryGetPipeDelimitedStyleArrayItems(itemMapper, values, out array, out error),
@@ -106,6 +106,31 @@ internal sealed class SchemaParameterValueConverter : IParameterValueConverter
         array = null;
         error = $"Style '{_parameter.Style}' not supported for object";
         return false;
+    }
+
+    private bool TryGetLabelStyleObjectProperties(
+        IReadOnlyCollection<string> values,
+        [NotNullWhen(true)] out JsonNode? obj,
+        [NotNullWhen(false)] out string? error)
+    {
+        if (values.Count != 1)
+        {
+            error = $"Expected one value when parameter style is '{Parameter.Styles.Label}'";
+            obj = null;
+            return false;
+        }
+
+        var keyAndValues = values
+            .First()
+            .Split('.')[1..];
+        if (_parameter.Explode)
+        {
+            keyAndValues = keyAndValues
+                .SelectMany(value => value
+                    .Split('='))
+                .ToArray();
+        }
+        return TryGetObjectProperties(keyAndValues, out obj, out error);
     }
 
     private bool TryGetMatrixStyleObjectProperties(
@@ -160,15 +185,15 @@ internal sealed class SchemaParameterValueConverter : IParameterValueConverter
     }
 
     private bool TryGetObjectProperties(
-        string[] keyAndValues,
+        IReadOnlyList<string> keyAndValues,
         [NotNullWhen(true)] out JsonNode? obj,
         [NotNullWhen(false)] out string? error)
     {
         var jsonObject = new JsonObject();
-        for (var i = 0; i < keyAndValues.Length; i += 2)
+        for (var i = 0; i < keyAndValues.Count; i += 2)
         {
             var propertyName = keyAndValues[i];
-            var propertyValue = keyAndValues[i + 1];
+            var propertyValue = keyAndValues.Count == i + 1 ? string.Empty : keyAndValues[i + 1];
             JsonNode? value;
             if (_propertySchemaResolver.TryGetSchemaForProperty(propertyName, out var propertySchema))
             {
