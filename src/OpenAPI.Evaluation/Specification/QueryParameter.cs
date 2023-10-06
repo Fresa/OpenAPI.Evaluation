@@ -68,7 +68,15 @@ public sealed class QueryParameter : Parameter
 
         internal void Evaluate(NameValueCollection queryParameters)
         {
-            var stringValues = queryParameters.GetValues(_parameter.Name);
+            var stringValues = _parameter.Style switch
+            {
+                Styles.DeepObject => queryParameters.AllKeys
+                    .Where(key => key?.StartsWith($"{_parameter.Name}[") ?? false)
+                    .Select(key => $"{key}={queryParameters.GetValues(key)?.FirstOrDefault()}")
+                    .ToArray(),
+                _ => queryParameters.GetValues(_parameter.Name)
+            };
+
             if (stringValues == null || !stringValues.Any())
             {
                 if (_parameter.Required)

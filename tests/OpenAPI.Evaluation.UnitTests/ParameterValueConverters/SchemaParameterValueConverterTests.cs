@@ -26,6 +26,7 @@ public class SchemaParameterValueConverterTests
     [MemberData(nameof(ObjectForm))]
     [MemberData(nameof(ObjectMatrix))]
     [MemberData(nameof(ObjectLabel))]
+    [MemberData(nameof(DeepObject))]
     public void Given_a_parameter_with_schema_When_mapping_values_It_should_map_the_value_to_proper_json(
         string parameterJson,
         string[] values,
@@ -56,6 +57,55 @@ public class SchemaParameterValueConverterTests
     }
 
     #region Object
+    public static TheoryData<string, string[], bool, string?> DeepObject => new()
+    {
+        {
+            """
+            {
+                "name": "color",
+                "in": "query",
+                "schema": {
+                    "type": "object",
+                    "properties": {
+                        "R": {
+                            "type": "number"
+                        },
+                        "G": {
+                            "type": "number"
+                        },
+                        "B": {
+                            "type": "number"
+                        }                        
+                    }
+                },
+                "style": "deepObject",
+                "explode": true
+            }
+            """,
+            new[] { "color[R]=100", "color[G]=200", "color[B]=150" },
+            true,
+            """{"R":100,"G":200,"B":150}"""
+        },
+        {
+            """
+            {
+                "name": "color",
+                "in": "query",
+                "schema": {
+                    "type": "object",
+                    "additionalProperties": { 
+                        "type": "string" 
+                    }            
+                },
+                "style": "deepObject",
+                "explode": true
+            }
+            """,
+            new[] { "color[R]=100", "color[G]=200", "color[B]=" },
+            true,
+            """{"R":"100","G":"200","B":""}"""
+        }
+    };
     public static TheoryData<string, string[], bool, string?> ObjectLabel => new()
     {
         {

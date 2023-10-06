@@ -9,12 +9,14 @@ namespace OpenAPI.Evaluation.ParameterConverters;
 internal sealed class SchemaParameterValueConverter : IParameterValueConverter
 {
     private readonly JsonSchema _schema;
+    private readonly bool _parseValues;
     private readonly Parameter _parameter;
     private readonly PropertySchemaResolver _propertySchemaResolver;
 
-    public SchemaParameterValueConverter(Parameter parameter, JsonSchema schema)
+    public SchemaParameterValueConverter(Parameter parameter, JsonSchema schema, bool parseValues = true)
     {
         _schema = schema;
+        _parseValues = parseValues;
         _parameter = parameter;
         _propertySchemaResolver = new PropertySchemaResolver(_schema);
     }
@@ -75,29 +77,35 @@ internal sealed class SchemaParameterValueConverter : IParameterValueConverter
                 return false;
             }
 
-            value = values.FirstOrDefault();
             error = null;
+            value = values.FirstOrDefault();
+            if (value == null || !_parseValues)
+            {
+                return true;
+            }
+
+            value = _parameter.Style switch
+            {
+                Parameter.Styles.Matrix => value.IndexOf('=') > -1 ? value[(value.IndexOf('=') + 1)..] : string.Empty,
+                Parameter.Styles.Label => value.TrimStart('.'),
+                _ => value
+            };
             return true;
         }
     }
-
+    
     private bool TryGetObject(
         IReadOnlyCollection<string> values,
         [NotNullWhen(true)] out JsonNode? obj,
-        [NotNullWhen(false)] out string? error)
-    {
-
-        return _parameter.Style switch
+        [NotNullWhen(false)] out string? error) =>
+        _parameter.Style switch
         {
             Parameter.Styles.Form => TryGetFormStyleObjectProperties(values, out obj, out error),
             Parameter.Styles.Label => TryGetLabelStyleObjectProperties(values, out obj, out error),
             Parameter.Styles.Matrix => TryGetMatrixStyleObjectProperties(values, out obj, out error),
-            //Parameter.Styles.SpaceDelimited => TryGetSpaceDelimitedStyleArrayItems(itemMapper, values, out array, out error),
-            //Parameter.Styles.PipeDelimited => TryGetPipeDelimitedStyleArrayItems(itemMapper, values, out array, out error),
-            Parameter.Styles.DeepObject => throw new NotImplementedException(),
+            Parameter.Styles.DeepObject => TryGetDeepObjectStyleObjectProperties(values, out obj, out error),
             _ => StyleNotSupportedForObject(out obj, out error)
         };
-    }
 
     private bool StyleNotSupportedForObject(
         [NotNullWhen(true)] out JsonNode? array,
@@ -106,6 +114,34 @@ internal sealed class SchemaParameterValueConverter : IParameterValueConverter
         array = null;
         error = $"Style '{_parameter.Style}' not supported for object";
         return false;
+    }
+
+    private bool TryGetDeepObjectStyleObjectProperties(
+        IReadOnlyCollection<string> values,
+        [NotNullWhen(true)] out JsonNode? obj,
+        [NotNullWhen(false)] out string? error)
+    {
+        if (!_parameter.Explode)
+        {
+            error = "deep object style without explode is not supported for objects";
+            obj = null;
+            return false;
+        }
+
+        var keyAndValues = values
+            .SelectMany(value =>
+            {
+                var keyAndValue = value
+                    .Split('=');
+                var key = keyAndValue.First();
+                return new[]
+                {
+                    key[(key.IndexOf('[') + 1)..key.IndexOf(']')],
+                    keyAndValue.Last()
+                };
+            })
+            .ToArray();
+        return TryGetObjectProperties(keyAndValues, out obj, out error);
     }
 
     private bool TryGetLabelStyleObjectProperties(
@@ -197,7 +233,7 @@ internal sealed class SchemaParameterValueConverter : IParameterValueConverter
             JsonNode? value;
             if (_propertySchemaResolver.TryGetSchemaForProperty(propertyName, out var propertySchema))
             {
-                var propertyConverter = new SchemaParameterValueConverter(_parameter, propertySchema);
+                var propertyConverter = new SchemaParameterValueConverter(_parameter, propertySchema, false);
                 if (!propertyConverter.TryMap(new[] { propertyValue }, out value, out error))
                 {
                     obj = null;
@@ -273,7 +309,7 @@ internal sealed class SchemaParameterValueConverter : IParameterValueConverter
             return false;
         }
 
-        var itemMapper = new SchemaParameterValueConverter(_parameter, itemsSchema);
+        var itemMapper = new SchemaParameterValueConverter(_parameter, itemsSchema, false);
         return _parameter.Style switch
         {
             Parameter.Styles.Form => TryGetFormStyleArrayItems(itemMapper, values, out array, out error),

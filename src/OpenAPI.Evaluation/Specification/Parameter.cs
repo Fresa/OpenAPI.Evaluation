@@ -28,7 +28,6 @@ public abstract class Parameter
         public const string SpaceDelimited = "spaceDelimited";
         public const string PipeDelimited = "pipeDelimited";
         public const string DeepObject = "deepObject";
-        public static readonly string[] All = { Matrix, Label, Form, Simple, SpaceDelimited, PipeDelimited, DeepObject };
     }
     protected static class Keys
     {
