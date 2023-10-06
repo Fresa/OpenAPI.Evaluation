@@ -216,6 +216,14 @@ public abstract class Parameter
             return converter ?? new SchemaParameterValueConverter(_parameter, schema);
         }
 
+        protected void EvaluateRequired()
+        {
+            if (_parameter.Required)
+            {
+                _openApiEvaluationContext.Results.Fail($"Parameter '{_parameter.Name}' is required");
+            }
+        }
+
         protected void Evaluate(string[] values)
         {
             var schemaEvaluator = _parameter.Schema?.GetEvaluator(_openApiEvaluationContext);

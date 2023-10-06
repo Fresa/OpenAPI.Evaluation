@@ -39,37 +39,25 @@ public sealed class PathParameter : Parameter
         return new Evaluator(context, this);
     }
 
-    internal class Evaluator
+    internal class Evaluator : ParameterEvaluator
     {
-        private readonly OpenApiEvaluationContext _openApiEvaluationContext;
         private readonly PathParameter _parameter;
 
-        internal Evaluator(OpenApiEvaluationContext openApiEvaluationContext, PathParameter parameter)
+        internal Evaluator(OpenApiEvaluationContext openApiEvaluationContext, PathParameter parameter) :
+            base(openApiEvaluationContext, parameter)
         {
-            _openApiEvaluationContext = openApiEvaluationContext;
             _parameter = parameter;
         }
-        
+
         internal void Evaluate(RoutePattern routePattern)
         {
             if (!routePattern.Values.TryGetValue(_parameter.Name, out var value))
             {
-                if (_parameter.Required)
-                {
-                    _openApiEvaluationContext.Results.Fail($"Parameter '{_parameter.Name}' is required");
-                }
+                EvaluateRequired();
                 return;
             }
 
-            _parameter.Schema?.GetEvaluator(_openApiEvaluationContext).Evaluate(JsonValue.Create(value));
-
-            if (_parameter.Content != null &&
-                _parameter.Content.GetEvaluator(_openApiEvaluationContext)
-                    .TryMatch(MediaTypeValue.ApplicationJson, out var contentEvaluator))
-            {
-                var node = JsonNode.Parse(value);
-                contentEvaluator.Evaluate(node);
-            }
+            Evaluate(new[] { value });
         }
     }
 }

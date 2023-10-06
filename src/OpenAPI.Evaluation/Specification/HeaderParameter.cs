@@ -64,13 +64,11 @@ public sealed class HeaderParameter : Parameter
 
     internal class Evaluator : ParameterEvaluator
     {
-        private readonly OpenApiEvaluationContext _openApiEvaluationContext;
         private readonly HeaderParameter _parameter;
 
         internal Evaluator(OpenApiEvaluationContext openApiEvaluationContext, HeaderParameter parameter) :
             base(openApiEvaluationContext, parameter)
         {
-            _openApiEvaluationContext = openApiEvaluationContext;
             _parameter = parameter;
         }
         
@@ -78,15 +76,11 @@ public sealed class HeaderParameter : Parameter
         {
             if (!headers.TryGetValues(_parameter.Name, out var stringValues))
             {
-                if (_parameter.Required)
-                {
-                    _openApiEvaluationContext.Results.Fail($"Parameter '{_parameter.Name}' is required");
-                }
+                EvaluateRequired();
                 return;
             }
 
-            var headerValues = stringValues.ToArray();
-            Evaluate(headerValues);
+            Evaluate(stringValues.ToArray());
         }
     }
 }

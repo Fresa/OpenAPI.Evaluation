@@ -1,6 +1,4 @@
 using System.Net;
-using System.Text.Json.Nodes;
-using OpenAPI.Evaluation.Http;
 
 namespace OpenAPI.Evaluation.Specification;
 
@@ -36,14 +34,13 @@ public sealed class CookieParameter : Parameter
         return new Evaluator(context, this);
     }
 
-    internal class Evaluator
+    internal class Evaluator : ParameterEvaluator
     {
-        private readonly OpenApiEvaluationContext _openApiEvaluationContext;
         private readonly CookieParameter _parameter;
 
-        internal Evaluator(OpenApiEvaluationContext openApiEvaluationContext, CookieParameter parameter)
+        internal Evaluator(OpenApiEvaluationContext openApiEvaluationContext, CookieParameter parameter) :
+            base(openApiEvaluationContext, parameter)
         {
-            _openApiEvaluationContext = openApiEvaluationContext;
             _parameter = parameter;
         }
 
@@ -52,22 +49,11 @@ public sealed class CookieParameter : Parameter
             var cookie = cookieCollection[_parameter.Name];
             if (cookie == null)
             {
-                if (_parameter.Required)
-                {
-                    _openApiEvaluationContext.Results.Fail($"Parameter '{_parameter.Name}' is required");
-                }
+                EvaluateRequired();
                 return;
             }
 
-            _parameter.Schema?.GetEvaluator(_openApiEvaluationContext).Evaluate(JsonValue.Create(cookie.Value));
-
-            if (_parameter.Content != null &&
-                _parameter.Content.GetEvaluator(_openApiEvaluationContext)
-                    .TryMatch(MediaTypeValue.ApplicationJson, out var contentEvaluator))
-            {
-                var node = JsonNode.Parse(cookie.Value);
-                contentEvaluator.Evaluate(node);
-            }
+            Evaluate(new[] { cookie.Value });
         }
     }
 }

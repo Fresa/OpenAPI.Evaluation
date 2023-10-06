@@ -79,10 +79,7 @@ public sealed class QueryParameter : Parameter
 
             if (stringValues == null || !stringValues.Any())
             {
-                if (_parameter.Required)
-                {
-                    _openApiEvaluationContext.Results.Fail($"Parameter '{_parameter.Name}' is required");
-                }
+                EvaluateRequired();
                 return;
             }
 
