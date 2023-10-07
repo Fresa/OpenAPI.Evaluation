@@ -17,7 +17,7 @@ internal abstract class ObjectValueParser : IValueParser
         Explode = explode;
     }
 
-    internal static ObjectValueParser GetObjectValueParser(Parameter parameter, JsonSchema schema) =>
+    internal static ObjectValueParser Create(Parameter parameter, JsonSchema schema) =>
         parameter.Style switch
         {
             Parameter.Styles.Matrix => new MatrixObjectValueParser(parameter.Explode, schema),

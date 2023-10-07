@@ -900,14 +900,14 @@ public class SchemaParameterValueConverterTests
             """
             {
                 "name": "test",
-                "in": "query",
+                "in": "header",
                 "schema": {
                 }
             }
             """,
             Array.Empty<string>(),
             true,
-            """{}"""
+            null
         }
     };
 }

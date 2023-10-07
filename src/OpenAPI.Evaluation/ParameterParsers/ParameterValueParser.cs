@@ -30,15 +30,15 @@ internal sealed class ParameterValueParser : IParameterValueParser
 
         return jsonType switch
         {
-            null => new EmptySchemaValueParser(),
+            null => MissingSchemaTypeValueParser.Create(parameter),
             SchemaValueType.String or
                 SchemaValueType.Boolean or
                 SchemaValueType.Integer or
                 SchemaValueType.Number or
                 SchemaValueType.Null
-                => PrimitiveValueParser.GetPrimitiveValueParser(parameter, jsonSchema),
-            SchemaValueType.Array => ArrayValueParser.GetArrayValueParser(parameter, jsonSchema),
-            SchemaValueType.Object => ObjectValueParser.GetObjectValueParser(parameter, jsonSchema),
+                => PrimitiveValueParser.Create(parameter, jsonSchema),
+            SchemaValueType.Array => ArrayValueParser.Create(parameter, jsonSchema),
+            SchemaValueType.Object => ObjectValueParser.Create(parameter, jsonSchema),
             _ => throw new NotSupportedException($"Json type {Enum.GetName(jsonType.Value)} is not supported")
         };
     }

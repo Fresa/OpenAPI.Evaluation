@@ -30,7 +30,7 @@ internal abstract class ArrayValueParser : IValueParser
         _jsonType = jsonType.Value;
     }
 
-    internal static ArrayValueParser GetArrayValueParser(Parameter parameter, JsonSchema schema) =>
+    internal static ArrayValueParser Create(Parameter parameter, JsonSchema schema) =>
         parameter.Style switch
         {
             Parameter.Styles.Matrix => new MatrixArrayValueParser(parameter.Explode, schema),

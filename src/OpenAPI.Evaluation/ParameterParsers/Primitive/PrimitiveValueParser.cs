@@ -23,7 +23,7 @@ internal abstract class PrimitiveValueParser : IValueParser
         Type = type;
     }
 
-    internal static PrimitiveValueParser GetPrimitiveValueParser(Parameter parameter, JsonSchema jsonSchema)
+    internal static PrimitiveValueParser Create(Parameter parameter, JsonSchema jsonSchema)
     {
         var jsonType = jsonSchema.GetJsonType() ??
                        throw new ArgumentException("Missing 'type' attribute for schema");
