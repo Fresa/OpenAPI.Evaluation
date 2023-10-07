@@ -17,11 +17,11 @@
 		<PackageTags>OpenAPI evaluation</PackageTags>
 		<Description>Evaluates API requests and responses using OpenAPI specifications</Description>
 		<RepositoryUrl>https://github.com/Fresa/OpenAPI.Evaluation</RepositoryUrl>
-		<PackageLicenseFile>LICENSE</PackageLicenseFile >
+		<PackageLicenseFile>LICENSE</PackageLicenseFile>
 		<Copyright>Copyright © 2023 Fredrik Arvidsson</Copyright>
 		<AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
 		<GenerateDocumentationFile>True</GenerateDocumentationFile>
-		<PackageLicenseFile>LICENSE</PackageLicenseFile >
+		<PackageLicenseFile>LICENSE</PackageLicenseFile>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 	</PropertyGroup>
 

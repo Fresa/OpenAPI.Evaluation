@@ -3,7 +3,7 @@ using System.Text.Json.Nodes;
 using Json.Schema;
 using OpenAPI.Evaluation.Collections;
 using OpenAPI.Evaluation.Http;
-using OpenAPI.Evaluation.ParameterConverters;
+using OpenAPI.Evaluation.ParameterParsers;
 
 namespace OpenAPI.Evaluation.Specification;
 
@@ -200,7 +200,7 @@ public abstract class Parameter
     {
         private readonly OpenApiEvaluationContext _openApiEvaluationContext;
         private readonly Parameter _parameter;
-        private IParameterValueConverter? _converter;
+        private IParameterValueParser? _converter;
 
         protected ParameterEvaluator(OpenApiEvaluationContext openApiEvaluationContext, Parameter parameter)
         {
@@ -208,12 +208,12 @@ public abstract class Parameter
             _parameter = parameter;
         }
 
-        private IParameterValueConverter GetParameterValueConverter(JsonSchema schema)
+        private IParameterValueParser GetParameterValueConverter(JsonSchema schema)
         {
             var converter = _openApiEvaluationContext.EvaluationOptions.ParameterValueConverters.FirstOrDefault(converter =>
                 converter.ParameterLocation == _parameter.In &&
                 converter.ParameterName == _parameter.Name);
-            return converter ?? new SchemaParameterValueConverter(_parameter, schema);
+            return converter ?? ParameterValueParser.Create(_parameter, schema);
         }
 
         protected void EvaluateRequired()
@@ -231,7 +231,7 @@ public abstract class Parameter
             {
                 var schema = schemaEvaluator.ResolveSchema();
                 _converter ??= GetParameterValueConverter(schema);
-                if (!_converter.TryMap(values, out var instance, out var mappingError))
+                if (!_converter.TryParse(values, out var instance, out var mappingError))
                 {
                     _openApiEvaluationContext.Results.Fail(mappingError);
                     return;

@@ -1,13 +1,13 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Nodes;
 
-namespace OpenAPI.Evaluation.ParameterConverters;
+namespace OpenAPI.Evaluation.ParameterParsers;
 
-public interface IParameterValueConverter
+public interface IParameterValueParser 
 {
     string ParameterName { get; }
     string ParameterLocation { get; }
-    bool TryMap(
+    bool TryParse(
         string[] values,
         out JsonNode? instance,
         [NotNullWhen(false)] out string? mappingError);

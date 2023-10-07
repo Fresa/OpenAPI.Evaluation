@@ -3,7 +3,7 @@ using System.Text.Json.Nodes;
 using FluentAssertions;
 using Json.Pointer;
 using Json.Schema;
-using OpenAPI.Evaluation.ParameterConverters;
+using OpenAPI.Evaluation.ParameterParsers;
 using OpenAPI.Evaluation.Specification;
 
 namespace OpenAPI.Evaluation.UnitTests.ParameterValueConverters;
@@ -16,7 +16,7 @@ public class SchemaParameterValueConverterTests
     [MemberData(nameof(Integer))]
     [MemberData(nameof(Boolean))]
     [MemberData(nameof(Null))]
-    [MemberData(nameof(Empty))]
+    [MemberData(nameof(EmptySchema))]
     [MemberData(nameof(ArrayLabel))]
     [MemberData(nameof(ArrayForm))]
     [MemberData(nameof(ArrayMatrix))]
@@ -37,8 +37,8 @@ public class SchemaParameterValueConverterTests
         var reader = new JsonNodeReader(parameterJsonNode, JsonPointer.Empty);
         Parameter.TryParse(reader, out var parameter).Should().BeTrue();
         var schema = parameterJsonNode["schema"].Deserialize<JsonSchema>();
-        var converter = new SchemaParameterValueConverter(parameter!, schema!);
-        converter.TryMap(values, out var instance, out var mappingError).Should().Be(shouldMap, mappingError);
+        var parser = ParameterValueParser.Create(parameter!, schema!);
+        parser.TryParse(values, out var instance, out var mappingError).Should().Be(shouldMap, mappingError);
         if (!shouldMap)
         {
             mappingError.Should().NotBeNullOrEmpty();
@@ -868,7 +868,7 @@ public class SchemaParameterValueConverterTests
         }
     };
 
-    public static TheoryData<string, string[], bool, string?> Empty => new()
+    public static TheoryData<string, string[], bool, string?> EmptySchema => new()
     {
         {
             """
@@ -880,8 +880,34 @@ public class SchemaParameterValueConverterTests
             }
             """,
             new[] { "test" },
-            false,
-            null
+            true,
+            "\"test\""
+        },
+        {
+            """
+            {
+                "name": "test",
+                "in": "query",
+                "schema": {
+                }
+            }
+            """,
+            new[] { "test", "test2" },
+            true,
+            """["test","test2"]"""
+        },
+        {
+            """
+            {
+                "name": "test",
+                "in": "query",
+                "schema": {
+                }
+            }
+            """,
+            Array.Empty<string>(),
+            true,
+            """{}"""
         }
     };
 }
