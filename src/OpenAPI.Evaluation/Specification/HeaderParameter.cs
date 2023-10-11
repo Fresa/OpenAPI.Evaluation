@@ -72,9 +72,9 @@ public sealed class HeaderParameter : Parameter
             _parameter = parameter;
         }
         
-        internal void Evaluate(HttpHeaders headers)
+        internal void Evaluate(IDictionary<string, IEnumerable<string>> headers)
         {
-            if (!headers.TryGetValues(_parameter.Name, out var stringValues))
+            if (!headers.TryGetValue(_parameter.Name, out var stringValues))
             {
                 EvaluateRequired();
                 return;

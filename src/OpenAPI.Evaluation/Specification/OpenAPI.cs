@@ -37,7 +37,7 @@ public sealed class OpenAPI
         };
         Json.Schema.OpenApi.Vocabularies.Register(jsonSchemaEvaluationOptions.VocabularyRegistry, jsonSchemaEvaluationOptions.SchemaRegistry);
         jsonSchemaEvaluationOptions.SchemaRegistry.Register(baseDocument);
-        _evaluationOptions = new OpenApiEvaluationOptions()
+        _evaluationOptions = new OpenApiEvaluationOptions
         {
             JsonSchemaEvaluationOptions = jsonSchemaEvaluationOptions,
             Document = baseDocument,
@@ -65,44 +65,48 @@ public sealed class OpenAPI
     /// <returns>The parsed OpenAPI specification</returns>
     public static OpenAPI Parse(JsonNode document, Uri? baseUri = null) => new(document, baseUri);
 
+    public Uri BaseUri => _evaluationOptions.Document.BaseUri;
     public string OpenApi { get; }
     public Servers Servers { get; }
     public Paths Paths { get; }
 
-    public bool TryGetApiOperation(HttpRequestMessage message, [NotNullWhen(true)] out Operation.Evaluator? operation,
+    /// <summary>
+    /// Try to match an OpenAPI operation
+    /// </summary>
+    /// <param name="uri">Uri to match</param>
+    /// <param name="method">Method to match</param>
+    /// <param name="operationEvaluator">Evaluator to the operation that matched</param>
+    /// <param name="evaluationResults">Evaluation results</param>
+    /// <returns>true if operation was matched</returns>
+    /// <exception cref="ArgumentException">Uri must be absolute</exception>
+    public bool TryMatchApiOperation(Uri uri, string method, [NotNullWhen(true)] out Operation.Evaluator? operationEvaluator,
         out OpenApiEvaluationResults evaluationResults)
     {
+        if (!uri.IsAbsoluteUri)
+        {
+            throw new ArgumentException("Uri is not an absolute uri", nameof(uri));
+        }
+        
         var rootEvaluationContext = new OpenApiEvaluationContext(_reader, _evaluationOptions);
         evaluationResults = rootEvaluationContext.Results;
-        operation = null;
-
-        var requestUri = message.RequestUri ??
-                         throw new ArgumentNullException($"{nameof(message)}.{nameof(message.RequestUri)}");
-        if (!requestUri.IsAbsoluteUri)
-        {
-            throw new ArgumentNullException($"{nameof(message)}.{nameof(message.RequestUri)}", "Request URI is not an absolute uri");
-        }
-
-        if (!Paths.GetEvaluator(rootEvaluationContext).TryMatch(requestUri,
+        operationEvaluator = null;
+        
+        if (!Paths.GetEvaluator(rootEvaluationContext).TryMatch(uri,
                 out var pathItemEvaluator,
                 out var serverUri))
             return false;
 
-        if (!pathItemEvaluator.TryMatch(message.Method.Method, out var foundOperation))
+        if (!pathItemEvaluator.TryMatch(method, out operationEvaluator))
             return false;
 
-        if (!foundOperation.TryGetServers(out var serversEvaluator))
+        if (!operationEvaluator.TryGetServers(out var serversEvaluator))
         {
             if (!pathItemEvaluator.TryGetServers(out serversEvaluator))
             {
                 serversEvaluator = Servers.GetEvaluator(rootEvaluationContext);
             }
         }
-        if (!serversEvaluator.TryMatch(serverUri))
-            return false;
-
-        operation = foundOperation;
-        return true;
+        return serversEvaluator.TryMatch(serverUri);
     }
 
     public override string ToString() =>

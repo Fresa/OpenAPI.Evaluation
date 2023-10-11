@@ -52,7 +52,7 @@ public sealed class ResponseHeaders : IReadOnlyDictionary<string, HeaderParamete
             _headers = headers;
         }
 
-        public void EvaluateRequestHeaders(HttpResponseHeaders headers)
+        public void EvaluateRequestHeaders(IDictionary<string, IEnumerable<string>> headers)
         {
             foreach (var parameter in _headers.Values)
             {
