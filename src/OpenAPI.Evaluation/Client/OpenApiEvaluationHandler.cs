@@ -2,14 +2,14 @@ using System.Net;
 
 namespace OpenAPI.Evaluation.Client;
 
-public class EvaluationHandler : DelegatingHandler
+public class OpenApiEvaluationHandler : DelegatingHandler
 {
     private readonly Specification.OpenAPI _openApi;
-    private readonly EvaluationOptions _options;
+    private readonly OpenApiEvaluationHandlerOptions _options;
 
-    public EvaluationHandler(
+    public OpenApiEvaluationHandler(
         Specification.OpenAPI openApi,
-        EvaluationOptions options,
+        OpenApiEvaluationHandlerOptions options,
         HttpMessageHandler inner) : base(inner)
     {
         _openApi = openApi;
@@ -30,11 +30,13 @@ public class EvaluationHandler : DelegatingHandler
 
         if (_options.EvaluateRequests)
         {
-            evaluationResults = _openApi.Evaluate(request, cancellationToken);
-            if (evaluationResults.IsValid == false)
+            evaluationResults = _openApi.EvaluateRequest(request, cancellationToken);
+            if (!evaluationResults.IsValid)
             {
-                return CreateEvaluationResponseMessage(new HttpResponseMessage(HttpStatusCode.BadRequest),
-                    evaluationResults);
+                return _options.ThrowOnRequestEvaluationFailure
+                    ? throw CreateOpenApiEvaluationException(evaluationResults)
+                    : CreateEvaluationResponseMessage(new HttpResponseMessage(HttpStatusCode.BadRequest),
+                        evaluationResults);
             }
         }
 
@@ -42,8 +44,14 @@ public class EvaluationHandler : DelegatingHandler
         if (!_options.EvaluateResponses)
             return response;
 
-        evaluationResults = _openApi.Evaluate(response, cancellationToken);
-        return CreateEvaluationResponseMessage(response, evaluationResults);
+        evaluationResults = _openApi.EvaluateResponse(response, cancellationToken);
+        if (!evaluationResults.IsValid)
+        {
+            return _options.ThrowOnResponseEvaluationFailure
+                ? throw CreateOpenApiEvaluationException(evaluationResults)
+                : CreateEvaluationResponseMessage(response, evaluationResults);
+        }
+        return response;
     }
 
     /// <summary>
@@ -60,12 +68,14 @@ public class EvaluationHandler : DelegatingHandler
 
         if (_options.EvaluateRequests)
         {
-            evaluationResults = await _openApi.EvaluateAsync(request, cancellationToken)
+            evaluationResults = await _openApi.EvaluateRequestAsync(request, cancellationToken)
                 .ConfigureAwait(false);
-            if (evaluationResults.IsValid == false)
+            if (!evaluationResults.IsValid)
             {
-                return CreateEvaluationResponseMessage(new HttpResponseMessage(HttpStatusCode.BadRequest),
-                    evaluationResults);
+                return _options.ThrowOnRequestEvaluationFailure
+                    ? throw CreateOpenApiEvaluationException(evaluationResults)
+                    : CreateEvaluationResponseMessage(new HttpResponseMessage(HttpStatusCode.BadRequest),
+                        evaluationResults);
             }
         }
 
@@ -74,17 +84,24 @@ public class EvaluationHandler : DelegatingHandler
         if (!_options.EvaluateResponses)
             return response;
 
-        evaluationResults = await _openApi.EvaluateAsync(response, cancellationToken)
+        evaluationResults = await _openApi.EvaluateResponseAsync(response, cancellationToken)
             .ConfigureAwait(false);
-        return CreateEvaluationResponseMessage(response, evaluationResults);
+        if (!evaluationResults.IsValid)
+        {
+            return _options.ThrowOnResponseEvaluationFailure
+                ? throw CreateOpenApiEvaluationException(evaluationResults)
+                : CreateEvaluationResponseMessage(response, evaluationResults);
+        }
+        return response;
     }
-    
+
+    private static OpenApiEvaluationException CreateOpenApiEvaluationException(OpenApiEvaluationResults evaluationResults) =>
+        new("Evaluation failed", evaluationResults);
+
     private EvaluationHttpResponseMessage CreateEvaluationResponseMessage(HttpResponseMessage response,
         OpenApiEvaluationResults evaluationResults)
     {
         var evaluationResponse = new EvaluationHttpResponseMessage(response, evaluationResults);
-        if (_options.ThrowOnEvaluationFailure)
-            evaluationResponse.ThrowIfOpenApiEvaluationIsNotValid();
         return evaluationResponse;
     }
 }

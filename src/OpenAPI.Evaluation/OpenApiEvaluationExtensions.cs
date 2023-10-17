@@ -6,28 +6,27 @@ namespace OpenAPI.Evaluation;
 
 public static class OpenApiEvaluationExtensions
 {
-    public static OpenApiEvaluationResults Evaluate(this Specification.OpenAPI openApiSpecification,
-        HttpRequestMessage request, CancellationToken cancellationToken = default)
+    public static OpenApiEvaluationResults EvaluateRequest(this Specification.OpenAPI openApiSpecification,
+        Uri requestUri, 
+        string method, 
+        IDictionary<string, IEnumerable<string>>? requestHeaders = null, 
+        JsonNode? requestContent = null)
     {
-        var requestUri = request.RequestUri ??
-                         throw new ArgumentNullException($"{nameof(request)}.{nameof(request.RequestUri)}",
-                             "Request URI cannot be null");
         if (!openApiSpecification.TryMatchApiOperation(
-                request.RequestUri, request.Method.Method, out var operationEvaluator, out var evaluationResults))
+                requestUri, method, out var operationEvaluator, out var evaluationResults))
         {
             return evaluationResults;
         }
 
-        if (request.Content != null)
+        requestHeaders ??= ImmutableDictionary<string, IEnumerable<string>>.Empty;
+        if (requestContent != null)
         {
-            var contentType = request.Content.Headers.ContentType ?? throw new ArgumentNullException(
-                $"{nameof(request)}.{nameof(request.Content)}.{nameof(request.Content.Headers)}.{request.Content.Headers.ContentType}",
-                "Missing content header content-type");
-
-            if (operationEvaluator.TryMatchRequestContent(contentType.ToString(),
+            var contentType =
+                requestHeaders.FirstOrDefault(pair => pair.Key.Equals("Content-Type", StringComparison.OrdinalIgnoreCase))
+                    .Value?.FirstOrDefault() ?? throw new ArgumentException("Missing header 'Content-Type'");
+            if (operationEvaluator.TryMatchRequestContent(contentType,
                     out var requestMediaTypeEvaluator))
             {
-                var requestContent = ReadContent(request.Content, cancellationToken);
                 requestMediaTypeEvaluator.Evaluate(requestContent);
             }
         }
@@ -36,88 +35,38 @@ public static class OpenApiEvaluationExtensions
             operationEvaluator.EvaluateMissingRequestBody();
         }
 
-        var headers = request.Headers.ToImmutableDictionary();
-        if (request.Content != null)
-        {
-            headers = headers.AddRange(request.Content.Headers);
-        }
-        operationEvaluator.EvaluateRequestHeaders(headers);
+        operationEvaluator.EvaluateRequestHeaders(requestHeaders);
         operationEvaluator.EvaluateRequestPathParameters();
         operationEvaluator.EvaluateRequestQueryParameters(requestUri);
-        operationEvaluator.EvaluateRequestCookies(requestUri, headers);
+        operationEvaluator.EvaluateRequestCookies(requestUri, requestHeaders);
         return evaluationResults;
     }
 
-    public static async Task<OpenApiEvaluationResults> EvaluateAsync(this Specification.OpenAPI openApiSpecification,
-        HttpRequestMessage request, CancellationToken cancellationToken = default)
+    public static OpenApiEvaluationResults EvaluateResponse(this Specification.OpenAPI openApiSpecification,
+        Uri requestUri,
+        string method,
+        int responseStatusCode,
+        IDictionary<string, IEnumerable<string>>? responseHeaders = null,
+        JsonNode? responseContent = null)
     {
-        var requestUri = request.RequestUri ??
-                         throw new ArgumentNullException($"{nameof(request)}.{nameof(request.RequestUri)}",
-                             "Request URI cannot be null");
         if (!openApiSpecification.TryMatchApiOperation(
-                request.RequestUri, request.Method.Method, out var operationEvaluator, out var evaluationResults))
+                requestUri, method, out var operationEvaluator, out var evaluationResults))
         {
             return evaluationResults;
         }
 
-        if (request.Content != null)
-        {
-            var contentType = request.Content.Headers.ContentType ?? throw new ArgumentNullException(
-                $"{nameof(request)}.{nameof(request.Content)}.{nameof(request.Content.Headers)}.{request.Content.Headers.ContentType}",
-                "Missing content header content-type");
-
-            if (operationEvaluator.TryMatchRequestContent(contentType.ToString(),
-                    out var requestMediaTypeEvaluator))
-            {
-                var requestContent = await ReadContentAsync(request.Content, cancellationToken)
-                    .ConfigureAwait(false);
-                requestMediaTypeEvaluator.Evaluate(requestContent);
-            }
-        }
-        else
-        {
-            operationEvaluator.EvaluateMissingRequestBody();
-        }
-
-        var headers = request.Headers.ToImmutableDictionary();
-        if (request.Content != null)
-        {
-            headers = headers.AddRange(request.Content.Headers);
-        }
-        operationEvaluator.EvaluateRequestHeaders(headers);
-        operationEvaluator.EvaluateRequestPathParameters();
-        operationEvaluator.EvaluateRequestQueryParameters(requestUri);
-        operationEvaluator.EvaluateRequestCookies(requestUri, headers);
-        return evaluationResults;
-    }
-
-    public static OpenApiEvaluationResults Evaluate(this Specification.OpenAPI openApiSpecification,
-        HttpResponseMessage response, CancellationToken cancellationToken = default)
-    {
-        var request = response.RequestMessage ??
-                      throw new ArgumentNullException(
-                          $"{nameof(response)}.{nameof(response.RequestMessage)}", "Request message is null");
-
-        if (request.RequestUri == null)
-            throw new ArgumentNullException($"{nameof(request)}.{nameof(request.RequestUri)}",
-                "Request URI cannot be null");
-
-
-        if (!openApiSpecification.TryMatchApiOperation(
-                request.RequestUri, request.Method.Method, out var operationEvaluator, out var evaluationResults))
+        if (!operationEvaluator.TryMatchResponse(responseStatusCode, out var responseEvaluator))
         {
             return evaluationResults;
         }
 
-        if (!operationEvaluator.TryMatchResponse((int)response.StatusCode, out var responseEvaluator))
-        {
-            return evaluationResults;
-        }
+        responseHeaders ??= ImmutableDictionary<string, IEnumerable<string>>.Empty;
+        responseEvaluator.EvaluateHeaders(responseHeaders);
 
-        responseEvaluator.EvaluateHeaders(response.Headers.ToImmutableDictionary());
-
-        var responseContentType = response.Content.Headers.ContentType;
-        var mediaType = responseContentType == null ? null : MediaTypeValue.Parse(responseContentType.ToString());
+        var responseContentType =
+            responseHeaders.FirstOrDefault(pair => pair.Key.Equals("Content-Type", StringComparison.OrdinalIgnoreCase))
+                .Value?.FirstOrDefault();
+        var mediaType = responseContentType == null ? null : MediaTypeValue.Parse(responseContentType);
         if (!responseEvaluator.TryMatchResponseContent(
                 mediaType,
                 out var responseMediaTypeEvaluator))
@@ -125,67 +74,112 @@ public static class OpenApiEvaluationExtensions
             return evaluationResults;
         }
 
-        var responseContent = ReadContent(response.Content, cancellationToken);
         responseMediaTypeEvaluator.Evaluate(responseContent);
-        
+
         return evaluationResults;
     }
 
-    public static async Task<OpenApiEvaluationResults> EvaluateAsync(this Specification.OpenAPI openApiSpecification,
-        HttpResponseMessage response, CancellationToken cancellationToken = default)
+    public static OpenApiEvaluationResults EvaluateRequest(this Specification.OpenAPI openApiSpecification,
+        HttpRequestMessage request, CancellationToken cancellationToken = default)
     {
-        var request = response.RequestMessage ??
-                      throw new ArgumentNullException(
-                          $"{nameof(response)}.{nameof(response.RequestMessage)}", "Request message is null");
-
-        if (request.RequestUri == null)
-            throw new ArgumentNullException($"{nameof(request)}.{nameof(request.RequestUri)}",
-                "Request URI cannot be null");
-
-
-        if (!openApiSpecification.TryMatchApiOperation(
-                request.RequestUri, request.Method.Method, out var operationEvaluator, out var evaluationResults))
+        var requestUri = request.GetRequestUri();
+        var method = request.Method.Method;
+        var body = request.Content.Read(cancellationToken);
+        var headers = request.Headers.ToImmutableDictionary();
+        if (request.Content != null)
         {
-            return evaluationResults;
+            headers = headers.AddRange(request.Content.Headers);
         }
+        return openApiSpecification.EvaluateRequest(requestUri, method, headers, body);
+    }
 
-        if (!operationEvaluator.TryMatchResponse((int)response.StatusCode, out var responseEvaluator))
-        {
-            return evaluationResults;
-        }
-
-        responseEvaluator.EvaluateHeaders(response.Headers.ToImmutableDictionary());
-
-        var responseContentType = response.Content.Headers.ContentType;
-        var mediaType = responseContentType == null ? null : MediaTypeValue.Parse(responseContentType.ToString());
-        if (!responseEvaluator.TryMatchResponseContent(
-                mediaType,
-                out var responseMediaTypeEvaluator))
-        {
-            return evaluationResults;
-        }
-
-        var responseContent = await ReadContentAsync(response.Content, cancellationToken)
+    public static async Task<OpenApiEvaluationResults> EvaluateRequestAsync(this Specification.OpenAPI openApiSpecification,
+        HttpRequestMessage request, CancellationToken cancellationToken = default)
+    {
+        var requestUri = request.GetRequestUri();
+        var method = request.Method.Method;
+        var body = await request.Content.ReadAsync(cancellationToken)
             .ConfigureAwait(false);
-        responseMediaTypeEvaluator.Evaluate(responseContent);
-
-        return evaluationResults;
+        var headers = request.Headers.ToImmutableDictionary();
+        if (request.Content != null)
+        {
+            headers = headers.AddRange(request.Content.Headers);
+        }
+        return openApiSpecification.EvaluateRequest(requestUri, method, headers, body);
     }
 
-    private static JsonNode? ReadContent(HttpContent httpContent, CancellationToken cancellationToken)
+    public static OpenApiEvaluationResults EvaluateResponse(this Specification.OpenAPI openApiSpecification,
+        HttpResponseMessage response, CancellationToken cancellationToken = default)
     {
+        var request = response.GetRequestMessage();
+        var requestUri = request.GetRequestUri();
+        var method = request.Method.Method;
+        var responseHeaders = response
+            .Headers.ToImmutableDictionary()
+            .AddRange(response.Content.Headers);
+        var responseCode = (int)response.StatusCode;
+        var responseContent = response.Content.Read(cancellationToken);
+
+        return openApiSpecification.EvaluateResponse(requestUri, method, responseCode, responseHeaders,
+            responseContent);
+    }
+
+    public static async Task<OpenApiEvaluationResults> EvaluateResponseAsync(this Specification.OpenAPI openApiSpecification,
+        HttpResponseMessage response, CancellationToken cancellationToken = default)
+    {
+        var request = response.GetRequestMessage();
+        var requestUri = request.GetRequestUri();
+        var method = request.Method.Method;
+        var responseHeaders = response
+            .Headers.ToImmutableDictionary()
+            .AddRange(response.Content.Headers);
+        var responseCode = (int)response.StatusCode;
+        var responseContent = await response.Content.ReadAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return openApiSpecification.EvaluateResponse(requestUri, method, responseCode, responseHeaders,
+            responseContent);
+    }
+
+    private static Uri GetRequestUri(this HttpRequestMessage request) =>
+        request.RequestUri ??
+        throw new ArgumentNullException($"{nameof(request)}.{nameof(request.RequestUri)}",
+            "Request URI cannot be null");
+    private static HttpRequestMessage GetRequestMessage(this HttpResponseMessage response) =>
+        response.RequestMessage ??
+        throw new ArgumentNullException(
+            $"{nameof(response)}.{nameof(response.RequestMessage)}", "Request message is null");
+
+    private static JsonNode? Read(this HttpContent? httpContent, CancellationToken cancellationToken)
+    {
+        if (httpContent == null)
+            return null;
         // Do not dispose the stream to let the user read it again (it get's disposed by the request/response message eventually)
         var contentStream = httpContent.ReadAsStream(cancellationToken);
+        if (contentStream.ReadByte() == -1)
+        {
+            return null;
+        }
+        contentStream.Position = 0;
         var content = JsonNode.Parse(contentStream);
         contentStream.Position = 0;
         return content;
     }
 
-    private static async Task<JsonNode?> ReadContentAsync(HttpContent httpContent, CancellationToken cancellationToken)
+    private static async Task<JsonNode?> ReadAsync(this HttpContent? httpContent, CancellationToken cancellationToken)
     {
+        if (httpContent == null)
+            return null;
         // Do not dispose the stream to let the user read it again (it get's disposed by the request/response message eventually)
         var contentStream = await httpContent.ReadAsStreamAsync(cancellationToken)
             .ConfigureAwait(false);
+        var buffer = new byte[1];
+        var result = await contentStream.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
+        if (result == 0)
+        {
+            return null;
+        }
+        contentStream.Position = 0;
         var content = JsonNode.Parse(contentStream);
         contentStream.Position = 0;
         return content;

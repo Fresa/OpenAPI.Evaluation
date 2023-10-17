@@ -7,5 +7,5 @@ internal sealed class OpenApiEvaluationOptions
 {
     internal required JsonNodeBaseDocument Document { get; init; }
     internal List<IParameterValueParser> ParameterValueConverters { get; } = new();
-    internal required EvaluationOptions JsonSchemaEvaluationOptions { get; init; }
+    internal required Json.Schema.EvaluationOptions JsonSchemaEvaluationOptions { get; init; }
 }

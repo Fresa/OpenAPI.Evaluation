@@ -150,7 +150,7 @@ public class ServerEvaluationTests
             reader, new OpenApiEvaluationOptions
             {
                 Document = new JsonNodeBaseDocument(serverNode!, new Uri("http://localhost")),
-                JsonSchemaEvaluationOptions = EvaluationOptions.Default
+                JsonSchemaEvaluationOptions = global::Json.Schema.EvaluationOptions.Default
             });
         var evaluator = server.GetEvaluator(evaluationContext);
         try

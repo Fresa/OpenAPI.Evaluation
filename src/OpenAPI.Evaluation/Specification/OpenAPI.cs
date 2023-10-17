@@ -30,7 +30,7 @@ public sealed class OpenAPI
 
         var baseDocument = new JsonNodeBaseDocument(document, baseUri);
 
-        var jsonSchemaEvaluationOptions = new EvaluationOptions
+        var jsonSchemaEvaluationOptions = new Json.Schema.EvaluationOptions
         {
             OutputFormat = OutputFormat.Hierarchical,
             EvaluateAs = SpecVersion.Draft202012
