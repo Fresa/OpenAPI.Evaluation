@@ -33,10 +33,10 @@ public abstract class TestSpecification : IAsyncLifetime
 
     protected HttpClient CreateResponseValidatingClient(Specification.OpenAPI document) =>
         new(new OpenApiEvaluationResultWritingHandler(_testOutputHelper,
-            new EvaluationHandler(document,
-                new EvaluationOptions
+            new OpenApiEvaluationHandler(document,
+                new OpenApiEvaluationHandlerOptions
                 {
-                    ThrowOnEvaluationFailure = true
+                    ThrowOnRequestEvaluationFailure = true
                 },
                 Server)))
         {

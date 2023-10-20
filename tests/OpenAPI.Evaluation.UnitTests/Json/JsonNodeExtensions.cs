@@ -7,12 +7,23 @@ namespace OpenAPI.Evaluation.UnitTests.Json;
 
 internal static class JsonNodeExtensions
 {
-    internal static T GetValue<T>(this JsonNode? node, string path)
+    internal static T ShouldGetValue<T>(this JsonNode? node, string path)
     {
         var value = node.Evaluate(path);
         return value.GetValue<T>();
     }
-    internal static JsonArray GetArray(this JsonNode? node, string path)
+    internal static bool TryGetValue<T>(this JsonNode? node, string path, [NotNullWhen(true)] out T? value) 
+    {
+        if (node.TryGetObject(path, out var @object))
+        {
+            value = @object.GetValue<T>();
+            return value != null;
+        }
+
+        value = default;
+        return false;
+    }
+    internal static JsonArray ShouldGetArray(this JsonNode? node, string path)
     {
         var value = node.Evaluate(path);
         return value.AsArray();
@@ -23,9 +34,21 @@ internal static class JsonNodeExtensions
         [NotNullWhen(true)] out JsonNode? @object) =>
         JsonPointer.Parse(path).TryEvaluate(node, out @object);
 
-    internal static JsonNode GetObject(this JsonNode? node, string path)
+    internal static JsonNode ShouldGetObject(this JsonNode? node, string path)
     {
         return node.Evaluate(path);
+    }
+
+    internal static IEnumerable<(string Key, JsonNode? Value)> GetChildren(this JsonNode? node)
+    {
+        if (node == null)
+            return Enumerable.Empty<(string Key, JsonNode? Value)>();
+
+        return new JsonNodeReader(node, JsonPointer.Empty).ReadChildren().Select(reader =>
+        {
+            reader.Deconstruct(out var key, out var value);
+            return (key, value);
+        });
     }
 
     private static JsonNode Evaluate(this JsonNode? node, string path)

@@ -80,7 +80,7 @@ public class ServerParsingTests
         }
         shouldThrow.Should().BeFalse();
 
-        var url = jsonNode.GetObject("/url").GetValue<string>();
+        var url = jsonNode.ShouldGetObject("/url").GetValue<string>();
         server.Url.Should().Be(url);
 
         if (jsonNode.TryGetObject("/description", out var descriptionNode))

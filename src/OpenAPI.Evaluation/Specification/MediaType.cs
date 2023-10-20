@@ -38,7 +38,7 @@ public sealed partial class MediaType
         return new Evaluator(context, this);
     }
 
-    public class Evaluator
+    public sealed class Evaluator
     {
         private readonly OpenApiEvaluationContext _openApiEvaluationContext;
         private readonly MediaType _mediaType;
@@ -49,7 +49,7 @@ public sealed partial class MediaType
             _mediaType = mediaType;
         }
 
-        public void EvaluateBody(JsonNode? body)
+        public void Evaluate(JsonNode? body)
         {
             _mediaType.Schema?
                 .GetEvaluator(_openApiEvaluationContext)

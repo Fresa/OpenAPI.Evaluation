@@ -65,7 +65,7 @@ public sealed partial class Parameters : IEnumerable<Parameter>
             _parameters = parameters;
         }
 
-        internal void EvaluateHeaders(HttpRequestHeaders requestHeaders)
+        internal void EvaluateHeaders(IDictionary<string, IEnumerable<string>> requestHeaders)
         {
             foreach (var parameter in _parameters.OfType<HeaderParameter>())
             {
@@ -84,10 +84,6 @@ public sealed partial class Parameters : IEnumerable<Parameter>
         internal void EvaluateQuery(Uri uri)
         {
             var querystring = uri.Query;
-            if (string.IsNullOrEmpty(querystring))
-            {
-                return;
-            }
             var queryParameters = System.Web.HttpUtility.ParseQueryString(querystring);
 
             foreach (var parameter in _parameters.OfType<QueryParameter>())
@@ -96,11 +92,11 @@ public sealed partial class Parameters : IEnumerable<Parameter>
             }
         }
 
-        internal void EvaluateCookies(Uri requestUri, HttpRequestHeaders requestHeaders)
+        internal void EvaluateCookies(Uri requestUri, IDictionary<string, IEnumerable<string>> requestHeaders)
         {
-            if (!requestHeaders.TryGetValues("Cookie", out var cookieValueList))
+            if (!requestHeaders.TryGetValue("Cookie", out var cookieValueList))
             {
-                return;
+                cookieValueList = new List<string>();
             }
 
             var cookieContainer = new CookieContainer();

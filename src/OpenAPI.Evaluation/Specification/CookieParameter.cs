@@ -1,5 +1,4 @@
 using System.Net;
-using System.Text.Json.Nodes;
 
 namespace OpenAPI.Evaluation.Specification;
 
@@ -10,13 +9,14 @@ public sealed class CookieParameter : Parameter
     private CookieParameter(JsonNodeReader reader) : base(reader)
     {
         _reader = reader;
-        Required = ReadRequired() ?? false;
         Name = ReadName();
         In = ReadIn();
-        Schema = ReadSchema();
-        Description = ReadDescription();
-
         AssertLocation(Location.Cookie);
+        Required = ReadRequired() ?? false;
+
+        Style = ReadStyle() ?? Styles.Form;
+        AssertStyle(Styles.Form);
+        Explode = ReadExplode();
     }
 
     internal static CookieParameter Parse(JsonNodeReader reader) => new(reader);
@@ -24,8 +24,8 @@ public sealed class CookieParameter : Parameter
     public override string Name { get; protected init; }
     public override string In { get; protected init; }
     public override bool Required { get; protected init; }
-    public override Schema? Schema { get; protected init; }
-    public override string? Description { get; protected init; }
+    public override string Style { get; protected init; }
+    public override bool Explode { get; protected init; }
 
     internal Evaluator GetEvaluator(OpenApiEvaluationContext openApiEvaluationContext)
     {
@@ -34,14 +34,13 @@ public sealed class CookieParameter : Parameter
         return new Evaluator(context, this);
     }
 
-    internal class Evaluator
+    internal class Evaluator : ParameterEvaluator
     {
-        private readonly OpenApiEvaluationContext _openApiEvaluationContext;
         private readonly CookieParameter _parameter;
 
-        internal Evaluator(OpenApiEvaluationContext openApiEvaluationContext, CookieParameter parameter)
+        internal Evaluator(OpenApiEvaluationContext openApiEvaluationContext, CookieParameter parameter) :
+            base(openApiEvaluationContext, parameter)
         {
-            _openApiEvaluationContext = openApiEvaluationContext;
             _parameter = parameter;
         }
 
@@ -50,16 +49,11 @@ public sealed class CookieParameter : Parameter
             var cookie = cookieCollection[_parameter.Name];
             if (cookie == null)
             {
-                if (_parameter.Required)
-                {
-                    _openApiEvaluationContext.Results.Fail($"Parameter '{_parameter.Name}' is required");
-                }
+                EvaluateRequired();
                 return;
             }
 
-            var cookieValue = JsonValue.Create(cookie.Value);
-            _parameter.Schema?.GetEvaluator(_openApiEvaluationContext).Evaluate(cookieValue);
+            Evaluate(new[] { cookie.Value });
         }
     }
-
 }

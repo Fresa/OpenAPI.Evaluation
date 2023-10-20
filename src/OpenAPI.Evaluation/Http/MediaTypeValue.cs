@@ -2,6 +2,7 @@ namespace OpenAPI.Evaluation.Http;
 
 public sealed record MediaTypeValue
 {
+    internal static MediaTypeValue ApplicationJson { get; } = Parse("application/json");
     private MediaTypeValue(string type, string subType, string? parameter) 
     {
         Type = type;

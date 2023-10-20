@@ -52,7 +52,7 @@ public sealed partial class Paths : IReadOnlyDictionary<string, Path>
         {
             if (!uri.IsAbsoluteUri)
             {
-                throw new ArgumentException($"{uri} must be an absolute uri");
+                throw new ArgumentException($"{uri} must be an absolute uri", nameof(uri));
             }
 
             var requestedPathSegments = uri

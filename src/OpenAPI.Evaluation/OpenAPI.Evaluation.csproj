@@ -5,6 +5,7 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<WarningsAsErrors>CS8600;CS8601;CS8603;CS8614;CS8618;CS8625</WarningsAsErrors>
+		<NoWarn>1591</NoWarn>
 		<PublishRepositoryUrl>true</PublishRepositoryUrl>
 		<PackageReleaseNotes>$([System.IO.File]::ReadAllText('$(MSBuildStartupDirectory)/release_notes.txt'))</PackageReleaseNotes>
 		<IncludeSymbols>true</IncludeSymbols>
@@ -16,11 +17,11 @@
 		<PackageTags>OpenAPI evaluation</PackageTags>
 		<Description>Evaluates API requests and responses using OpenAPI specifications</Description>
 		<RepositoryUrl>https://github.com/Fresa/OpenAPI.Evaluation</RepositoryUrl>
-		<PackageLicenseFile>LICENSE</PackageLicenseFile >
+		<PackageLicenseFile>LICENSE</PackageLicenseFile>
 		<Copyright>Copyright © 2023 Fredrik Arvidsson</Copyright>
 		<AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
 		<GenerateDocumentationFile>True</GenerateDocumentationFile>
-		<PackageLicenseFile>LICENSE</PackageLicenseFile >
+		<PackageLicenseFile>LICENSE</PackageLicenseFile>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 	</PropertyGroup>
 

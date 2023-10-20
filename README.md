@@ -1,24 +1,31 @@
 # OpenAPI.Evaluation
-Evaluates API requests and responses against [OpenAPI 3.1 specifications](https://spec.openapis.org/oas/v3.1.0#openapi-specification) using a custom `System.Net.Http.DelegatingHandler`.
+Evaluates API requests and responses against [OpenAPI 3.1 specifications](https://spec.openapis.org/oas/v3.1.0#openapi-specification). Comes with a custom `System.Net.Http.DelegatingHandler` that can be used to intercept requests and responses when using an `HttpClient`.
 
-[![Continuous Delivery](https://github.com/Fresa/OpenAPI.Evaluation/actions/workflows/ci.yml/badge.svg)](https://github.com/Fresa/OpenAPI.Evaluation/actions/workflows/ci.yml)
+[![Continuous Delivery](https://github.com/Fresa/OpenAPI.Evaluation/actions/workflows/cd.yml/badge.svg)](https://github.com/Fresa/OpenAPI.Evaluation/actions/workflows/ci.yml)
 
 ## Installation
 ```Shell
-dotnet add package OpenAPI.Evaluation
+dotnet add package Evaluation.OpenAPI
 ```
 
-https://www.nuget.org/packages/OpenAPI.Evaluation/
+https://www.nuget.org/packages/Evaluation.OpenAPI/
 
 ## Getting Started
-Load the OpenAPI specification and create a `HttpClient`.
+Load the OpenAPI specification.
 ```dotnet
 var stream = File.OpenRead("path/to/openapi-specification.json");
 var document = JsonNode.Parse(stream);               
 var specification = Specification.OpenAPI.Parse(document);
+``` 
+The `OpenAPI` class has extension methods that can evaluate `HttpRequestMessage` and `HttpResponseMessage` or by manually specifying request uri and method and provide content and headers.
+
+### Evaluating using HttpClient
+See above how to load an OpenAPI specification.
+```dotnet
+var specification = ...
 var evaluationOptions = new EvaluationOptions();
 var client = new HttpClient(
-    new EvaluationHandler(
+    new OpenApiEvaluationHandler(
         specification,
         evaluationOptions,
         new HttpClientHandler()));
@@ -27,7 +34,7 @@ var client = new HttpClient(
 When sending a request the `HttpResponseMessage` will be wrapped by a `EvaluationHttpResponseMessage` that contains the evaluation results in the property `EvaluationResults`.
 If the `HttpRequestMessage` fails evaluation the handler will return a `EvaluationHttpResponseMessage` with a `BadRequest` response and never send the request to the server.
 
-If you rather prefer failed evaluations to throw and exception, this is configurable in the `EvaluationOptions`.
+If you rather prefer failed evaluations to throw an exception, this can be configured with `EvaluationOptions`.
 
 ### Yaml
 To load a yaml formatted specification, I recommend [Yaml2JsonNode](https://www.nuget.org/packages/Yaml2JsonNode/).

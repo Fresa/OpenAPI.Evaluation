@@ -1,4 +1,5 @@
 using System.Collections.Specialized;
+using OpenAPI.Evaluation.Collections;
 
 namespace OpenAPI.Evaluation.Specification;
 
@@ -9,21 +10,42 @@ public sealed class QueryParameter : Parameter
     private QueryParameter(JsonNodeReader reader) : base(reader)
     {
         _reader = reader;
-        Required = ReadRequired() ?? false;
         Name = ReadName();
         In = ReadIn();
-        Schema = ReadSchema();
-        Description = ReadDescription();
-
         AssertLocation(Location.Query);
+        Required = ReadRequired() ?? false;
+        Style = ReadStyle() ?? Styles.Form;
+        AssertStyle(Styles.Form, Styles.SpaceDelimited, Styles.PipeDelimited, Styles.DeepObject);
+        Explode = ReadExplode();
+
+        AllowEmptyValue = ReadAllowEmptyValue();
+        AllowReserved = ReadAllowReserved();
+    }
+    private bool ReadAllowEmptyValue()
+    {
+        if (!_reader.TryRead("allowEmptyValue", out var allowEmptyValueReader))
+            return false;
+
+        Annotations.Add(allowEmptyValueReader);
+        return allowEmptyValueReader.GetValue<bool>();
+    }
+    private bool ReadAllowReserved()
+    {
+        if (!_reader.TryRead("allowReserved", out var allowReservedReader))
+            return false;
+
+        Annotations.Add(allowReservedReader);
+        return allowReservedReader.GetValue<bool>();
     }
 
     internal static QueryParameter Parse(JsonNodeReader reader) => new(reader);
     public override string Name { get; protected init; }
     public override string In { get; protected init; }
     public override bool Required { get; protected init; }
-    public override Schema? Schema { get; protected init; }
-    public override string? Description { get; protected init; }
+    public override string Style { get; protected init; }
+    public override bool Explode { get; protected init; }
+    public bool AllowEmptyValue { get; private init; }
+    public bool AllowReserved { get; private init; }
 
     internal Evaluator GetEvaluator(OpenApiEvaluationContext openApiEvaluationContext)
     {
@@ -32,12 +54,13 @@ public sealed class QueryParameter : Parameter
         return new Evaluator(context, this);
     }
 
-    internal class Evaluator
+    internal sealed class Evaluator : ParameterEvaluator
     {
         private readonly OpenApiEvaluationContext _openApiEvaluationContext;
         private readonly QueryParameter _parameter;
 
-        internal Evaluator(OpenApiEvaluationContext openApiEvaluationContext, QueryParameter parameter)
+        internal Evaluator(OpenApiEvaluationContext openApiEvaluationContext, QueryParameter parameter) :
+            base(openApiEvaluationContext, parameter)
         {
             _openApiEvaluationContext = openApiEvaluationContext;
             _parameter = parameter;
@@ -45,17 +68,22 @@ public sealed class QueryParameter : Parameter
 
         internal void Evaluate(NameValueCollection queryParameters)
         {
-            var stringValues = queryParameters.GetValues(_parameter.Name);
-            if (stringValues == null)
+            var stringValues = _parameter.Style switch
             {
-                if (_parameter.Required)
-                {
-                    _openApiEvaluationContext.Results.Fail($"Parameter '{_parameter.Name}' is required");
-                }
+                Styles.DeepObject => queryParameters.AllKeys
+                    .Where(key => key?.StartsWith($"{_parameter.Name}[") ?? false)
+                    .Select(key => $"{key}={queryParameters.GetValues(key)?.FirstOrDefault()}")
+                    .ToArray(),
+                _ => queryParameters.GetValues(_parameter.Name)
+            };
+
+            if (stringValues == null || !stringValues.Any())
+            {
+                EvaluateRequired();
                 return;
             }
 
-            _parameter.Schema?.GetEvaluator(_openApiEvaluationContext).Evaluate(stringValues);
+            Evaluate(stringValues);
         }
     }
 }

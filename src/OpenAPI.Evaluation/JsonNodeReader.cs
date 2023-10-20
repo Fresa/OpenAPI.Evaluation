@@ -59,25 +59,32 @@ internal sealed class JsonNodeReader
 
     private JsonNodeReader? TryRead(JsonPointer pointer)
     {
-        if (RefPointer.TryEvaluate(_root, out var referenceNode))
-        {
-            var referencePointerExpression = referenceNode!.GetValue<string>();
-            if (!referencePointerExpression.StartsWith("#"))
-                throw new InvalidOperationException("Only local (fragment) $ref pointers are supported");
+        var reader = ResolveReferences();
 
-            var referencePointer = JsonPointer.Parse(referencePointerExpression);
-            new JsonNodeReader(_root.Root, Trail.Combine(RefPointer)).TryRead(
-                referencePointer.Combine(pointer), out var reader);
-            return reader;
-        }
-
-        if (!pointer.TryEvaluate(_root, out var node) ||
+        if (!pointer.TryEvaluate(reader._root, out var node) ||
             node == null)
         {
             return null;
         }
 
-        return new JsonNodeReader(node, Trail.Combine(pointer));
+        return new JsonNodeReader(node, reader.Trail.Combine(pointer));
+    }
+
+    internal JsonNodeReader ResolveReferences()
+    {
+        if (!RefPointer.TryEvaluate(_root, out var referenceNode))
+        {
+            return this;
+        }
+
+        var referencePointerExpression = referenceNode!.GetValue<string>();
+        if (!referencePointerExpression.StartsWith("#"))
+            throw new InvalidOperationException("Only local (fragment) $ref pointers are supported");
+
+        var referencePointer = JsonPointer.Parse(referencePointerExpression);
+        var reader = new JsonNodeReader(_root.Root, Trail.Combine(RefPointer)).Read(
+            referencePointer);
+        return reader.ResolveReferences();
     }
 
     internal T GetValue<T>() => _root.GetValue<T>();

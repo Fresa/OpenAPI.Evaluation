@@ -1,5 +1,4 @@
 using System.Diagnostics.CodeAnalysis;
-using System.Net.Http.Headers;
 using System.Text.Json.Nodes;
 using OpenAPI.Evaluation.Collections;
 using OpenAPI.Evaluation.Http;
@@ -88,7 +87,7 @@ public sealed partial class Operation
             _pathItemParametersEvaluator = pathItemParametersEvaluator;
         }
 
-        public bool TryMatchRequestContent(MediaTypeValue mediaType,
+        public bool TryMatchRequestContent(string mediaType,
             [NotNullWhen(true)] out MediaType.Evaluator? mediaTypeEvaluator)
         {
             mediaTypeEvaluator = null;
@@ -99,7 +98,7 @@ public sealed partial class Operation
             }
 
             var requestBodyEvaluator = _operation.RequestBody.GetEvaluator(_openApiEvaluationContext);
-            return requestBodyEvaluator.TryMatch(mediaType, out mediaTypeEvaluator);
+            return requestBodyEvaluator.TryMatch(MediaTypeValue.Parse(mediaType), out mediaTypeEvaluator);
         }
 
         public void EvaluateMissingRequestBody()
@@ -108,7 +107,7 @@ public sealed partial class Operation
                 .EvaluateMissingRequestBody();
         }
 
-        public void EvaluateRequestHeaders(HttpRequestHeaders headers)
+        public void EvaluateRequestHeaders(IDictionary<string, IEnumerable<string>> headers)
         {
             _pathItemParametersEvaluator?.EvaluateHeaders(headers);
             _operation.Parameters?.GetEvaluator(_openApiEvaluationContext).EvaluateHeaders(headers);
@@ -126,7 +125,7 @@ public sealed partial class Operation
             _operation.Parameters?.GetEvaluator(_openApiEvaluationContext).EvaluateQuery(uri);
         }
 
-        public void EvaluateRequestCookies(Uri requestUri, HttpRequestHeaders headers)
+        public void EvaluateRequestCookies(Uri requestUri, IDictionary<string, IEnumerable<string>> headers)
         {
             _pathItemParametersEvaluator?.EvaluateCookies(requestUri, headers);
             _operation.Parameters?.GetEvaluator(_openApiEvaluationContext).EvaluateCookies(requestUri, headers);

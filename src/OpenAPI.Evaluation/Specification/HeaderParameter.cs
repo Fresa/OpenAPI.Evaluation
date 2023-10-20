@@ -10,22 +10,23 @@ public sealed class HeaderParameter : Parameter
     private HeaderParameter(JsonNodeReader reader) : base(reader)
     {
         _reader = reader;
-        Required = ReadRequired() ?? false;
         Name = ReadName();
         In = ReadIn();
-        Schema = ReadSchema();
-        Description = ReadDescription();
-
         AssertLocation(Location.Header);
+        Required = ReadRequired() ?? false;
+        Style = ReadStyle() ?? Styles.Simple;
+        AssertStyle(Styles.Simple);
+        Explode = ReadExplode();
     }
 
     private HeaderParameter(JsonNodeReader reader, string name) : base(reader)
     {
         _reader = reader;
-        Required = ReadRequired() ?? false;
         Name = name;
         In = Location.Header;
-        Schema = ReadSchema();
+        Required = ReadRequired() ?? false;
+        Style = ReadStyle() ?? Styles.Simple;
+        AssertStyle(Styles.Simple);
     }
 
     private static readonly string[] IgnoredRequestHeaders = { "Accept", "Content-Type", "Authorization" };
@@ -51,8 +52,8 @@ public sealed class HeaderParameter : Parameter
     public override string Name { get; protected init; }
     public override string In { get; protected init; }
     public override bool Required { get; protected init; }
-    public override Schema? Schema { get; protected init; }
-    public override string? Description { get; protected init; }
+    public override string Style { get; protected init; }
+    public override bool Explode { get; protected init; }
 
     internal Evaluator GetEvaluator(OpenApiEvaluationContext openApiEvaluationContext)
     {
@@ -61,29 +62,25 @@ public sealed class HeaderParameter : Parameter
         return new Evaluator(context, this);
     }
 
-    internal class Evaluator
+    internal class Evaluator : ParameterEvaluator
     {
-        private readonly OpenApiEvaluationContext _openApiEvaluationContext;
         private readonly HeaderParameter _parameter;
 
-        internal Evaluator(OpenApiEvaluationContext openApiEvaluationContext, HeaderParameter parameter)
+        internal Evaluator(OpenApiEvaluationContext openApiEvaluationContext, HeaderParameter parameter) :
+            base(openApiEvaluationContext, parameter)
         {
-            _openApiEvaluationContext = openApiEvaluationContext;
             _parameter = parameter;
         }
         
-        internal void Evaluate(HttpHeaders headers)
+        internal void Evaluate(IDictionary<string, IEnumerable<string>> headers)
         {
-            if (!headers.TryGetValues(_parameter.Name, out var stringValues))
+            if (!headers.TryGetValue(_parameter.Name, out var stringValues))
             {
-                if (_parameter.Required)
-                {
-                    _openApiEvaluationContext.Results.Fail($"Parameter '{_parameter.Name}' is required");
-                }
+                EvaluateRequired();
                 return;
             }
 
-            _parameter.Schema?.GetEvaluator(_openApiEvaluationContext).Evaluate(stringValues);
+            Evaluate(stringValues.ToArray());
         }
     }
 }

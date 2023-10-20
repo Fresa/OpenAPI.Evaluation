@@ -54,7 +54,7 @@ public sealed class Response
             _response = response;
         }
 
-        public void EvaluateHeaders(HttpResponseHeaders headers)
+        public void EvaluateHeaders(IDictionary<string, IEnumerable<string>> headers)
         {
             _response.Headers?.GetEvaluator(_openApiEvaluationContext).EvaluateRequestHeaders(headers);
         }
