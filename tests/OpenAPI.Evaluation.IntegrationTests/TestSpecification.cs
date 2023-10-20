@@ -31,12 +31,12 @@ public abstract class TestSpecification : IAsyncLifetime
     protected Specification.OpenAPI LoadOpenApiDocument(string pathRelativeToRoot)
         => OpenApi.OpenApi.Load(pathRelativeToRoot, _baseUri);
 
-    protected HttpClient CreateResponseValidatingClient(Specification.OpenAPI document) =>
+    protected HttpClient CreateResponseValidatingClient(Specification.OpenAPI document, bool throwOnRequestEvaluationFailure = true) =>
         new(new OpenApiEvaluationResultWritingHandler(_testOutputHelper,
             new OpenApiEvaluationHandler(document,
                 new OpenApiEvaluationHandlerOptions
                 {
-                    ThrowOnRequestEvaluationFailure = true
+                    ThrowOnRequestEvaluationFailure = throwOnRequestEvaluationFailure
                 },
                 Server)))
         {
