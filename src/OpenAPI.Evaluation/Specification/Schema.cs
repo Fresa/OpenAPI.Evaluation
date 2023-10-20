@@ -41,7 +41,9 @@ public sealed partial class Schema
         
         public void Evaluate(JsonNode? instance)
         {
-            ResolveSchema().Evaluate(instance, _openApiEvaluationContext.EvaluationOptions.JsonSchemaEvaluationOptions);
+            _openApiEvaluationContext.Results.Report(
+                ResolveSchema()
+                    .Evaluate(instance, _openApiEvaluationContext.EvaluationOptions.JsonSchemaEvaluationOptions));
         }
     }
 }
