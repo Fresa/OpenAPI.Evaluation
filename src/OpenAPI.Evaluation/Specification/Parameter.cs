@@ -247,9 +247,10 @@ public abstract class Parameter
             {
                 if (values.Length != 1)
                 {
-                    _openApiEvaluationContext.Results.Fail($"Expected 1 value when the parameter is as json content, found {values.Length}");
+                    _openApiEvaluationContext.Results.Fail($"Expected 1 value when the parameter defines json content, found {values.Length}");
                 }
-                mediaTypeEvaluator.Evaluate(values.First());
+
+                mediaTypeEvaluator.Evaluate( JsonNode.Parse(values.First()));
             }
         }
     }
