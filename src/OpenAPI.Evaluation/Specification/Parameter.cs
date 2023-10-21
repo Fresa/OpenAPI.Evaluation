@@ -210,7 +210,7 @@ public abstract class Parameter
 
         private IParameterValueParser GetParameterValueConverter(JsonSchema schema)
         {
-            var converter = _openApiEvaluationContext.EvaluationOptions.ParameterValueConverters.FirstOrDefault(converter =>
+            var converter = _openApiEvaluationContext.EvaluationOptions.ParameterValueParsers.FirstOrDefault(converter =>
                 converter.ParameterLocation == _parameter.In &&
                 converter.ParameterName == _parameter.Name);
             return converter ?? ParameterValueParser.Create(_parameter, schema);
