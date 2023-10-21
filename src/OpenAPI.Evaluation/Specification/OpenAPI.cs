@@ -2,6 +2,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Nodes;
 using Json.Pointer;
 using Json.Schema;
+using OpenAPI.Evaluation.ParameterParsers;
 
 namespace OpenAPI.Evaluation.Specification;
 
@@ -15,7 +16,10 @@ public sealed class OpenAPI
     private readonly OpenApiEvaluationOptions _evaluationOptions;
     private readonly JsonNodeReader _reader;
 
-    private OpenAPI(JsonNode document, Uri? baseUri = null)
+    private OpenAPI(
+        JsonNode document,
+        Uri? baseUri = null,
+        IParameterValueParser[]? parameterValueParsers = null)
     {
         _reader = new JsonNodeReader(document, JsonPointer.Empty);
         OpenApi = _reader.Read("openapi").GetValue<string>();
@@ -40,9 +44,12 @@ public sealed class OpenAPI
         _evaluationOptions = new OpenApiEvaluationOptions
         {
             JsonSchemaEvaluationOptions = jsonSchemaEvaluationOptions,
-            Document = baseDocument,
-            ParameterValueConverters = { }
+            Document = baseDocument
         };
+        if (parameterValueParsers != null)
+        {
+            _evaluationOptions.ParameterValueParsers.AddRange(parameterValueParsers);
+        }
     }
 
     private void EnsureSupportedOpenApiVersion()
@@ -62,8 +69,12 @@ public sealed class OpenAPI
     /// <param name="baseUri">The base url of the specification.
     /// If not specified the first url in the specification's server node will be used.
     /// Must be an absolute URL</param>
+    /// <param name="parameterValueParsers">A list of parameter value parsers that can override the default logic of parsing parameter values to json objects</param>
     /// <returns>The parsed OpenAPI specification</returns>
-    public static OpenAPI Parse(JsonNode document, Uri? baseUri = null) => new(document, baseUri);
+    public static OpenAPI Parse(
+        JsonNode document, 
+        Uri? baseUri = null,
+        IParameterValueParser[]? parameterValueParsers = null) => new(document, baseUri, parameterValueParsers);
 
     public Uri BaseUri => _evaluationOptions.Document.BaseUri;
     public string OpenApi { get; }
@@ -86,11 +97,11 @@ public sealed class OpenAPI
         {
             throw new ArgumentException("Uri is not an absolute uri", nameof(uri));
         }
-        
+
         var rootEvaluationContext = new OpenApiEvaluationContext(_reader, _evaluationOptions);
         evaluationResults = rootEvaluationContext.Results;
         operationEvaluator = null;
-        
+
         if (!Paths.GetEvaluator(rootEvaluationContext).TryMatch(uri,
                 out var pathItemEvaluator,
                 out var serverUri))
