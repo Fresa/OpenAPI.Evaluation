@@ -170,15 +170,12 @@ public static class OpenApiEvaluationExtensions
     {
         if (httpContent == null)
             return null;
-        
+
+        await httpContent.LoadIntoBufferAsync()
+            .ConfigureAwait(false);
         // Do not dispose the stream to let the user read it again (it get's disposed by the request/response message eventually)
         var contentStream = await httpContent.ReadAsStreamAsync(cancellationToken)
             .ConfigureAwait(false);
-        if (!contentStream.CanSeek)
-        {
-            await httpContent.LoadIntoBufferAsync()
-                .ConfigureAwait(false);
-        }
         var buffer = new byte[1];
         var result = await contentStream.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
         if (result == 0)
