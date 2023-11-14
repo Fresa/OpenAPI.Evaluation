@@ -70,7 +70,7 @@ internal sealed class JsonNodeReader
         return new JsonNodeReader(node, reader.Trail.Combine(pointer));
     }
 
-    internal JsonNodeReader ResolveReferences()
+    private JsonNodeReader ResolveReferences()
     {
         if (!RefPointer.TryEvaluate(_root, out var referenceNode))
         {

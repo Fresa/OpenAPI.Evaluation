@@ -34,7 +34,7 @@ public sealed partial class Schema
 
         internal JsonSchema ResolveSchema() =>
             _resolvedSchema ??= _openApiEvaluationContext.EvaluationOptions.Document.FindSubschema(
-                                    _schemaReader.ResolveReferences().RootPath, 
+                                    _schemaReader.RootPath, 
                                     _openApiEvaluationContext.EvaluationOptions.JsonSchemaEvaluationOptions) ??
                                 throw new InvalidOperationException(
                                     $"Could not read schema at {_schemaReader.RootPath}, evaluated from {_schemaReader.Trail}");

@@ -19,7 +19,8 @@ public sealed class OpenAPI
     private OpenAPI(
         JsonNode document,
         Uri? baseUri = null,
-        IParameterValueParser[]? parameterValueParsers = null)
+        IParameterValueParser[]? parameterValueParsers = null,
+        EvaluationOptions? jsonSchemaEvaluationOptions = null)
     {
         _reader = new JsonNodeReader(document, JsonPointer.Empty);
         OpenApi = _reader.Read("openapi").GetValue<string>();
@@ -34,11 +35,10 @@ public sealed class OpenAPI
 
         var baseDocument = new JsonNodeBaseDocument(document, baseUri);
 
-        var jsonSchemaEvaluationOptions = new Json.Schema.EvaluationOptions
-        {
-            OutputFormat = OutputFormat.Hierarchical,
-            EvaluateAs = SpecVersion.Draft202012
-        };
+        jsonSchemaEvaluationOptions ??= new EvaluationOptions();
+        jsonSchemaEvaluationOptions.OutputFormat = OutputFormat.Hierarchical;
+        jsonSchemaEvaluationOptions.EvaluateAs = SpecVersion.Draft202012;
+
         Json.Schema.OpenApi.Vocabularies.Register(jsonSchemaEvaluationOptions.VocabularyRegistry, jsonSchemaEvaluationOptions.SchemaRegistry);
         jsonSchemaEvaluationOptions.SchemaRegistry.Register(baseDocument);
         _evaluationOptions = new OpenApiEvaluationOptions
@@ -70,11 +70,14 @@ public sealed class OpenAPI
     /// If not specified the first url in the specification's server node will be used.
     /// Must be an absolute URL</param>
     /// <param name="parameterValueParsers">A list of parameter value parsers that can override the default logic of parsing parameter values to json objects</param>
+    /// <param name="jsonSchemaEvaluationOptions">Json Schema evaluation options</param>
     /// <returns>The parsed OpenAPI specification</returns>
     public static OpenAPI Parse(
         JsonNode document, 
         Uri? baseUri = null,
-        IParameterValueParser[]? parameterValueParsers = null) => new(document, baseUri, parameterValueParsers);
+        IParameterValueParser[]? parameterValueParsers = null,
+        EvaluationOptions? jsonSchemaEvaluationOptions = null) => 
+        new(document, baseUri, parameterValueParsers, jsonSchemaEvaluationOptions);
 
     public Uri BaseUri => _evaluationOptions.Document.BaseUri;
     public string OpenApi { get; }
