@@ -1,13 +1,13 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFramework>net7.0</TargetFramework>
+		<TargetFramework>net8.0</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<WarningsAsErrors>CS8600;CS8601;CS8603;CS8614;CS8618;CS8625</WarningsAsErrors>
 		<NoWarn>1591</NoWarn>
 		<PublishRepositoryUrl>true</PublishRepositoryUrl>
-		<PackageReleaseNotes>$([System.IO.File]::ReadAllText('$(MSBuildStartupDirectory)/release_notes.txt'))</PackageReleaseNotes>
+		<PackageReleaseNotes>$([System.IO.File]::ReadAllText('$(MSBuildProjectDirectory)/release_notes.txt'))</PackageReleaseNotes>
 		<IncludeSymbols>true</IncludeSymbols>
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
 		<PackageId>Evaluation.OpenAPI</PackageId>
@@ -26,12 +26,13 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="JsonSchema.Net" Version="[5.0.0,6.0)" />
-		<PackageReference Include="JsonSchema.Net.OpenApi" Version="[2.0.0,3.0]" />
+		<PackageReference Include="JsonSchema.Net" Version="5.0.0" />
+		<PackageReference Include="JsonSchema.Net.OpenApi" Version="2.0.0" />
 		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1">
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
+		<PackageReference Include="ParameterStyleParsers.OpenAPI" Version="1.0.3" />
 		<None Include="..\..\README.md" Pack="true" PackagePath="\" />
 		<None Include="..\..\LICENSE" Pack="true" PackagePath="\" />
 	</ItemGroup>

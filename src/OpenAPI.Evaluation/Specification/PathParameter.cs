@@ -57,7 +57,7 @@ public sealed class PathParameter : Parameter
                 return;
             }
 
-            Evaluate(new[] { value });
+            Evaluate(value);
         }
     }
 }

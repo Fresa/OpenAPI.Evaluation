@@ -53,7 +53,7 @@ public sealed class CookieParameter : Parameter
                 return;
             }
 
-            Evaluate(new[] { cookie.Value });
+            Evaluate(cookie.Value);
         }
     }
 }

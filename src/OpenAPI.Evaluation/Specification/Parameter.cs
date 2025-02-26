@@ -1,9 +1,11 @@
+using System.ComponentModel.DataAnnotations;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Nodes;
 using Json.Schema;
 using OpenAPI.Evaluation.Collections;
 using OpenAPI.Evaluation.Http;
 using OpenAPI.Evaluation.ParameterParsers;
+using OpenAPI.ParameterStyleParsers.ParameterParsers;
 
 namespace OpenAPI.Evaluation.Specification;
 
@@ -50,6 +52,7 @@ public abstract class Parameter
         Description = ReadDescription();
         Content = ReadContent();
         Schema = ReadSchema();
+        SchemaNode = ReadSchemaNode();
         AssertSchemaOrContent();
         Deprecated = ReadDeprecated();
         Example = ReadExample();
@@ -87,6 +90,16 @@ public abstract class Parameter
 
         Annotations.Add(descriptionReader);
         return descriptionReader.GetValue<string>();
+    }
+
+    private JsonNode? ReadSchemaNode()
+    {
+        if (_reader.TryRead(Keys.Schema, out var schemaReader))
+        {
+            var (_, value) = schemaReader;
+            return value;
+        }
+        return null;
     }
 
     private Schema? ReadSchema() => _reader.TryRead(Keys.Schema, out var schemaReader) ? Schema.Parse(schemaReader) : null;
@@ -187,6 +200,7 @@ public abstract class Parameter
     public abstract string Name { get; protected init; }
     public abstract string In { get; protected init; }
     public abstract bool Required { get; protected init; }
+    internal JsonNode? SchemaNode { get; private init; }
     public Schema? Schema { get; private init; }
     public string? Description { get; private init; }
     public Content? Content { get; private init; }
@@ -213,7 +227,7 @@ public abstract class Parameter
             var converter = _openApiEvaluationContext.EvaluationOptions.ParameterValueParsers.FirstOrDefault(converter =>
                 converter.ParameterLocation == _parameter.In &&
                 converter.ParameterName == _parameter.Name);
-            return converter ?? ParameterValueParser.Create(_parameter, schema);
+            return converter ?? new ParameterValueParserFacade(_parameter);
         }
 
         protected void EvaluateRequired()
@@ -224,7 +238,7 @@ public abstract class Parameter
             }
         }
 
-        protected void Evaluate(string[] values)
+        protected void Evaluate(string values)
         {
             var schemaEvaluator = _parameter.Schema?.GetEvaluator(_openApiEvaluationContext);
             if (schemaEvaluator != null)
@@ -245,12 +259,7 @@ public abstract class Parameter
                 _parameter.Content.GetEvaluator(_openApiEvaluationContext)
                     .TryMatch(MediaTypeValue.ApplicationJson, out var mediaTypeEvaluator))
             {
-                if (values.Length != 1)
-                {
-                    _openApiEvaluationContext.Results.Fail($"Expected 1 value when the parameter defines json content, found {values.Length}");
-                }
-
-                mediaTypeEvaluator.Evaluate( JsonNode.Parse(values.First()));
+                mediaTypeEvaluator.Evaluate(JsonNode.Parse(values));
             }
         }
     }

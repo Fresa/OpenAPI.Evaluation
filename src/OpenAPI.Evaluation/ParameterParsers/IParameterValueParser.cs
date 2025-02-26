@@ -8,7 +8,7 @@ public interface IParameterValueParser
     string ParameterName { get; }
     string ParameterLocation { get; }
     bool TryParse(
-        string[] values,
+        string values,
         out JsonNode? instance,
         [NotNullWhen(false)] out string? mappingError);
 }
