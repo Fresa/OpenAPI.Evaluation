@@ -83,7 +83,7 @@ public sealed class QueryParameter : Parameter
                 return;
             }
 
-            Evaluate(stringValues);
+            Evaluate(string.Join('&', stringValues));
         }
     }
 }

@@ -80,7 +80,7 @@ public sealed class HeaderParameter : Parameter
                 return;
             }
 
-            Evaluate(stringValues.ToArray());
+            Evaluate(string.Join(", ", stringValues));
         }
     }
 }
